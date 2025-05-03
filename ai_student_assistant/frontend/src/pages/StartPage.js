@@ -32,7 +32,6 @@ const StartPage = () => {
                     <div className="text-section">
                         <h1>Welcome to Fallnik</h1>
                         <p>Platforma ta inteligentă de asistență academică.</p>
-                        <HelloMessage />
                         <Link to="/login">
                             <button className="button" size="lg">Join Now</button>
                         </Link>
