@@ -1,0 +1,165 @@
+.login-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: white;
+    font-family: 'Segoe UI', sans-serif;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.login-layout {
+    display: flex;
+    flex-direction: row;
+    gap: 30px;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap; /* pentru responsive */
+}
+      
+.canvas-side {
+    width: 300px;
+    height: 400px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+    margin-top: 220px;
+}
+      
+.login-form {
+    width: 90%;
+    max-width: 400px;
+    min-width: 280px; /* adaugă un minim */
+    padding: 40px;
+    margin: auto;
+    color: black;
+    width: 400px;
+    padding: 40px;
+    z-index: 9999;
+    margin: auto;
+    background: rgba(71, 64, 64, 0.05);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+      
+.login-form h2 {
+margin-bottom: 20px;
+font-size: 2rem;
+}
+
+.login-form input {
+padding: 10px 15px;
+border: none;
+border-radius: 10px;
+background: rgba(255, 255, 255, 0.2);
+color: black;
+font-size: 1rem;
+}
+
+.login-form input:focus {
+outline: 3px solid black;
+}
+
+.login-form input:hover {
+background-color: #f1f1f1;
+}
+
+.login-form button {
+padding: 12px;
+background: black;
+color: white;
+border: none;
+border-radius: 10px;
+cursor: pointer;
+font-weight: bold;
+transition: background 0.3s ease;
+}
+
+.login-form button:hover {
+background: #161c24;
+}
+
+.login-form p {
+color: black;
+font-size: 0.9rem;
+}
+
+.login-form a {
+color: #24146b;
+font-weight: bold;
+text-decoration: none;
+}
+
+.login-form a:hover {
+text-decoration: underline;
+}
+
+/* === Telefoane (sub 600px) === */
+@media (max-width: 600px) {
+    .login-layout {
+      flex-direction: column;
+      gap: 20px;
+    }
+  
+    .canvas-side {
+        display: none;
+    }
+  
+    .login-form {
+      width: 95%;
+    }
+  
+    .login-form h2 {
+      font-size: 1.5rem;
+    }
+  }
+  
+  /* === Tablete (600px - 768px) === */
+  @media (max-width: 768px) {
+    .login-layout {
+      flex-direction: column;
+      gap: 25px;
+    }
+  
+    .canvas-side {
+        display: none;
+    }
+  
+    .login-form {
+        width: 90%;
+    }
+  }
+  
+  /* === Laptopuri (768px - 1200px) === */
+  @media (max-width: 1300px) {
+    .login-form {
+      width: 500px;
+    }
+
+    .canvas-side {
+        display: none;
+    }
+
+  }
+  
+  /* === Ecrane mari (peste 1200px) === */
+  @media (min-width: 1201px) {
+    .login-form {
+      width: 400px;
+    }
+  
+    .canvas-side {
+      width: 300px;
+      height: 400px;
+      margin-top: 220px;
+    }
+  }
+  
+      
+  
