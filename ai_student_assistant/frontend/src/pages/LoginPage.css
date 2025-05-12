@@ -100,6 +100,39 @@ text-decoration: none;
 text-decoration: underline;
 }
 
+.password-wrapper{
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-wrapper input{
+    width: 89%;
+    padding-right: 40px;
+}
+
+.password-wrapper span {
+    position: absolute;
+    right: 10px;
+    cursor: pointer;
+    color: #24146b;
+  }
+
+.eye-icon{
+    position: absolute;
+    right: 5px;
+    cursor: pointer;
+    color: #333;
+    font-size: 1.2rem;
+}
+
+.error-message {
+    color: red;
+    font-size: 0.9rem;
+    margin-top: -10px;
+    margin-bottom: 10px;
+  }
+
 /* === Telefoane (sub 600px) === */
 @media (max-width: 600px) {
     .login-layout {

@@ -2,10 +2,12 @@ import React, {useState} from 'react';
 import './LoginPage.css';
 import {Link} from 'react-router-dom';
 import BookModel from '../components/BookModel';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 const LoginPage = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
 
     const handleLogin = (e) => {
         e.preventDefault();
@@ -28,16 +30,23 @@ const LoginPage = () => {
                 onChange={(e) => setUsername(e.target.value)}
                 required
                 />
-
+                <div className="password-wrapper">
                 <input
-                type="text"
+                type = {showPassword ? "text" : "password"}
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 />
+                <span
+                    className="eye-icon"
+                    onClick={ () => setShowPassword((prev) => !prev)}
+                >
+                    {showPassword ? <FaEyeSlash /> : <FaEye />}
+                </span>
+                </div>
 
-                <button type="submit"> Connect</button>
+                <button type="submit"> Login</button>
 
                 <p>
                     Don't have an account?

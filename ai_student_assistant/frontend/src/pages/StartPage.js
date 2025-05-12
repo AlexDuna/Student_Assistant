@@ -1,7 +1,6 @@
 import React from 'react';
 import './StartPage.css';
 import { Link } from 'react-router-dom';
-import HelloMessage from '../components/HelloMessage';
 
 const StartPage = () => {
     return (
