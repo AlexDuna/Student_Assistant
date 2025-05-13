@@ -14,15 +14,47 @@ const RegisterPage = () => {
 
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [passwordStrength, setPasswordStrength] = useState("");
+    const [passwordStrength, setPasswordStrength] = useState({label:'', color:'gray', level: 0});
     const [passwordMatchError, setPasswordMatchError] = useState("");
+    const [submissionError, setSubmissionError] = useState("");
+    const [usernameAvailable, setUsernameAvailable] = useState(null);
+    const [emailAvailable, setEmailAvailable] = useState(null);
 
+    //Functie pentru verificare username in timp real in frontend
+    const checkUsername = async (username) => {
+        const res = await fetch("http://localhost:5000/api/check-username",{
+            method: "POST",
+            headers: { "Content-Type": "application/json"},
+            body: JSON.stringify({username}),
+        });
+        const data = await res.json();
+        setUsernameAvailable(!data.exists);
+    };
+
+    //Functie pentru verificare email in timp real in frontend
+    const checkEmail = async (email) =>{
+        const res = await fetch("http://localhost:5000/api/check-email",{
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({email}),
+        });
+        const data = await res.json();
+        setEmailAvailable(!data.exists);
+    }
 
     const evaluatePasswordStrength = (password) => {
-        if(password.length < 6 ) return "Too short";
-        if(!/[A-Za-z]/.test(password)) return "Needs a letter";
-        if(!/\d/.test(password)) return "Needs a number";
-        return "Strong";
+        if(password.length < 6 ) 
+            return {label: "Too short", color: "gray", level: 0};
+        if(!/[a-z]/.test(password)) 
+            return {label: "Add lowercase", color: "red", level: 1};
+        if(!/[A-Z]/.test(password)) 
+            return {label: "Add uppercase", color:"orange", level: 2};
+        if(!/\d/.test(password)) 
+            return {label: "Add number", color:"gold", level: 3};
+        if(!/[!@#$%^&*(),.?":{}|<>]/.test(password)) 
+            return {label: "Add special character", color: "lightgreen", level: 4};
+
+        return {label: "Strong", color:"green", level: 5};
     };
 
     const handleChange = (e) => {
@@ -32,9 +64,17 @@ const RegisterPage = () => {
         if (name === "password") {
             setPasswordStrength(evaluatePasswordStrength(value));
           }
+        
+          if(name === "username"){
+            checkUsername(value);
+          }
+
+          if(name === "email"){
+            checkEmail(value);
+          }
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         if(form.password !== form.confirmPassword){
             setPasswordMatchError("Passwords do not match.");
@@ -44,13 +84,45 @@ const RegisterPage = () => {
             setPasswordMatchError(""); // curăță eroarea dacă se potrivesc
           }
 
-        if(passwordStrength !== "Strong"){
+        if(form.password.includes(' ')){
+            setPasswordMatchError("Password should not contain spaces.");
+            return;
+        }else{
+            setPasswordMatchError("");
+        }
+
+        if(passwordStrength.label !== "Strong"){
             alert("Please use a stronger password.");
             return;
         }
 
-        //Trimitere date la backend
-        console.log("Register with: ", form);
+        try{
+            const response = await fetch("http://localhost:5000/api/register",{
+                method: "POST",
+                headers:{
+                    "Content-Type" : "application/json"
+                },
+                body: JSON.stringify({
+                    username: form.username,
+                    email: form.email,
+                    password: form.password
+                })
+            });
+
+            const data = await response.json();
+
+            if(response.ok){
+                alert(data.message); //"User registered successfully"
+                //navigate("/login");
+            }else if(response.status===409){
+                setSubmissionError("Username or email already exists.");
+            }else{
+                setSubmissionError("Registration failed. Try again later.");
+            }
+        }catch(error){
+            console.error("Error registering user", error);
+            alert("Server error");
+        }
     };
 
     
@@ -73,6 +145,9 @@ const RegisterPage = () => {
                         onChange={handleChange}
                         required
                     />
+                    {form.username && usernameAvailable === false &&(
+                        <p style={{color: "red", fontSize: "0.8rem"}}>Username already taken</p>
+                    )}
 
                     <input
                         type = "email"
@@ -82,6 +157,9 @@ const RegisterPage = () => {
                         onChange={handleChange}
                         required
                     />
+                    {form.email && emailAvailable === false &&(
+                        <p style={{color: "red", fontSize: "0.8rem"}}>Email already taken</p>
+                    )}
                     <div className="password-wrapper">
                     <input
                         type = {showPassword ? "text" : "password"}
@@ -99,18 +177,20 @@ const RegisterPage = () => {
                     </span>
                     </div>
 
-                    {passwordStrength && (
-                        <p
+                    <div style={{height: "6px", background: "#eee", borderRadius: "4px", marginTop:"5px"}}>
+                        <div
                         style={{
-                            color: passwordStrength === "Strong" ? "green" : "red",
-                            fontSize: "0.85rem",
-                            marginTop: "-10px",
-                            marginBottom: "10px",
-                        }}
-                        >
-                        {passwordStrength}
-                        </p>
-                    )}
+                            width: `${(passwordStrength.level / 5) * 100}%`,
+                            backgroundColor: passwordStrength.color,
+                            height: "100%",
+                            borderRadius: "4px",
+                            transition: "width 0.3s ease"
+                        }}>
+                        </div>
+                    </div>
+                    <p style={{ fontSize: "0.8rem", color: passwordStrength.color, marginTop: "5px"}}>
+                        {passwordStrength.label}
+                    </p>
 
                     <div className="password-wrapper">
                     <input
@@ -134,9 +214,14 @@ const RegisterPage = () => {
                         {passwordMatchError}
                     </p>
                     )}
-                    
 
                     <button type = "submit" onSubmit={handleSubmit}> Register </button>
+                    {submissionError && (
+                        <p style={{ color: "red", fontSize: "0.85rem" }}>
+                            {submissionError}
+                        </p>
+                    )}
+
 
                     <p>
                         Already have an account? 
