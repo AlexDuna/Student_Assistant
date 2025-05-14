@@ -2,6 +2,8 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 import hashlib, secrets, os
+import uuid
+from flask_mail import Mail, Message
 
 # Flask app initializaton
 app = Flask(__name__)
@@ -25,11 +27,24 @@ class User(db.Model):
     email = db.Column(db.String(120), unique = True, nullable = False)
     salt = db.Column(db.String(64), nullable = False)
     password_hash = db.Column(db.String(64), nullable = False)
+    is_confirmed = db.Column(db.Boolean, default = False)
+    confirmation_token = db.Column(db.String(64), unique = True)
 
 # Hashing
 def hash_password(password, salt):
     return hashlib.sha256((salt+password).encode('utf-8')).hexdigest()
     #se combina parola cu salt-ul si se aplica SHA-256
+
+
+# Configurare server SMTP (PENTRU MAIL, folosesc gmail)
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = 'micalex607@gmail.com'
+app.config['MAIL_PASSWORD'] = 'uudt inhh krxz obza'
+app.config['MAIL_DEFAULT_SENDER'] = 'Fallnik <micalex607@gmail.com>'
+
+mail = Mail(app)
 
 # Register
 @app.route('/api/register', methods = ['POST'])
@@ -53,14 +68,49 @@ def register():
     #facem hash la parola+salt
     password_hash = hash_password(password, salt)
 
+    #token-ul de confirmare care va fi trimis prim mail pentru validarea inregistrarii
+    confirmation_token = uuid.uuid4().hex
 
     #cream noul utilizator si il adaugam in baza de date
-    new_user = User(username=username, email=email, salt=salt, password_hash = password_hash)
+    new_user = User(
+        username=username, 
+        email=email, 
+        salt=salt, 
+        password_hash = password_hash,
+        is_confirmed = False,
+        confirmation_token = confirmation_token)
     db.session.add(new_user)
     db.session.commit()
 
+    # Link de confirmare (vei modifica când e pe domeniul real)
+    confirm_url = f"http://localhost:3000/confirm/{confirmation_token}"
+
+    #Constructie mesaj
+    msg = Message("Confirm your Fallnik account", recipients = [email])
+    msg.body = f"Hello {username}, \n\nClick the link below to confirm your account:\n{confirm_url}\n\nIf you didn't register, please ignore this email."
+
+    try:
+        mail.send(msg)
+        print(f"Confirmation email sent to {email}")
+    except Exception as e:
+        print(f"Error sending confirmation email: {e}")
+
     return jsonify({'message' : 'Username registered successfully'}), 201
 
+@app.route('/api/confirm/<token>', methods = ['GET'])
+def confirm_email(token):
+    user = User.query.filter_by(confirmation_token = token).first()
+
+    if not user:
+        return jsonify({'error': 'Invalid or expired confirmation token'}), 404
+    
+    if user.is_confirmed:
+        return jsonify({'message': 'Account already confirmed'}), 200
+    
+    user.is_confirmed = True
+
+    db.session.commit()
+    return jsonify({'message': 'Account confirmed successfully'}), 200
 
 # Login
 @app.route('/api/login', methods = ['POST'])
@@ -100,6 +150,8 @@ def check_email():
     email = data.get("email")
     exists = User.query.filter_by(email = email).first() is not None
     return jsonify({'exists' : exists}), 200
+
+
 
 
 # DataBase initialization (crearea automata a tabelului)
