@@ -9,10 +9,12 @@ const LoginPage = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
     const navigate = useNavigate();
 
     const handleLogin =  async (e) => {
         e.preventDefault();
+        setErrorMessage(""); //se reseteaza mesajul de eroare la fiecare submit
 
         try{
             const response = await fetch("http://localhost:5000/api/login", {
@@ -27,18 +29,18 @@ const LoginPage = () => {
             });
 
             const data = await response.json();
+            console.log("Login response:", data);
 
             if(response.ok){
-                alert(data.message); //"Login successful"
-                //Simulam autentificare locala
+                alert(data.message);
                 localStorage.setItem('isLoggedIn', 'true');
                 navigate('/dashboard'); //Redirectionare catre pagina dashboard
             }else{
-                alert(data.error || 'Login failed.');
+                setErrorMessage(data.error || "Login failed. Please try again.");
             }
         }catch(error){
             console.error('Login error.', error);
-            alert('Server error.');
+            setErrorMessage("Server error. Please try again later.");
         }
 
         console.log('Login with: ', username, password);
@@ -54,7 +56,7 @@ const LoginPage = () => {
                 <h2>Authentication</h2>
                 <input
                 type="text"
-                placeholder="Email or Username"
+                placeholder="Username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
@@ -75,7 +77,19 @@ const LoginPage = () => {
                 </span>
                 </div>
 
+                {errorMessage && (
+                    <p style={{color:'red', marginTop: "-10px", fontSize: "0.85rem"}}>
+                        {errorMessage}
+                    </p>
+                )}
+
                 <button type="submit"> Login</button>
+
+                <p style={{textAlign:"center"}}>
+                    <Link to="/request-reset" style={{fontSize: "0.9rem", color:"#24146b", textDecoration: "none"}}>
+                        Forgot Password?
+                    </Link>
+                </p>
 
                 <p>
                     Don't have an account?

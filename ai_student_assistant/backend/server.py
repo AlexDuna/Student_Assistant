@@ -4,6 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 import hashlib, secrets, os
 import uuid
 from flask_mail import Mail, Message
+from datetime import datetime, timezone, timedelta
 
 # Flask app initializaton
 app = Flask(__name__)
@@ -20,6 +21,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Initializam obiectul SQLAlchemy
 db = SQLAlchemy(app)
 
+
+
 # Model User (tabelul din baza de date)
 class User(db.Model):
     id = db.Column(db.Integer, primary_key = True)
@@ -29,6 +32,10 @@ class User(db.Model):
     password_hash = db.Column(db.String(64), nullable = False)
     is_confirmed = db.Column(db.Boolean, default = False)
     confirmation_token = db.Column(db.String(64), unique = True)
+    reset_token = db.Column(db.String(64), unique = True)
+    reset_token_expiry = db.Column(db.DateTime)
+
+
 
 # Hashing
 def hash_password(password, salt):
@@ -45,6 +52,8 @@ app.config['MAIL_PASSWORD'] = 'uudt inhh krxz obza'
 app.config['MAIL_DEFAULT_SENDER'] = 'Fallnik <micalex607@gmail.com>'
 
 mail = Mail(app)
+
+
 
 # Register
 @app.route('/api/register', methods = ['POST'])
@@ -97,6 +106,10 @@ def register():
 
     return jsonify({'message' : 'Username registered successfully'}), 201
 
+
+
+
+
 @app.route('/api/confirm/<token>', methods = ['GET'])
 def confirm_email(token):
     user = User.query.filter_by(confirmation_token = token).first()
@@ -112,6 +125,9 @@ def confirm_email(token):
     db.session.commit()
     return jsonify({'message': 'Account confirmed successfully'}), 200
 
+
+
+
 # Login
 @app.route('/api/login', methods = ['POST'])
 def login():
@@ -126,6 +142,9 @@ def login():
     if not user:
         return jsonify({'error': 'Invalid credentials'}), 401
     
+    if not user.is_confirmed:
+        return jsonify({'error': 'Please confirm your email address to log in'}), 403
+    
     #facem hash la parola introdusa cu salt-ul utilizatorului din DataBase
     hashed_input = hash_password(password, user.salt)
 
@@ -135,6 +154,9 @@ def login():
     
     return jsonify({'message' : 'Login successful'}), 200
 
+
+
+
 # Pentru verificare username in timp real
 @app.route('/api/check-username', methods = ['POST'])
 def check_username():
@@ -143,6 +165,9 @@ def check_username():
     exists = User.query.filter_by(username=username).first() is not None
     return jsonify({'exists' : exists}), 200
 
+
+
+
 # Pentru verificare email in timp real
 @app.route('/api/check-email', methods=['POST'])
 def check_email():
@@ -150,6 +175,72 @@ def check_email():
     email = data.get("email")
     exists = User.query.filter_by(email = email).first() is not None
     return jsonify({'exists' : exists}), 200
+
+
+
+
+#Pentru request de resetare a parolei
+@app.route('/api/request-password-reset', methods= ['POST'])
+def request_password_reset():
+    data = request.get_json()
+    email = data.get("email")
+
+    user = User.query.filter_by(email = email).first()
+    if not user:
+        return jsonify({'error' : 'Email not found'}), 404
+    
+    token = uuid.uuid4().hex
+
+    user.reset_token = token
+    user.reset_token_expiry = datetime.now(timezone.utc) + timedelta(minutes=30)
+    db.session.commit()
+
+    reset_url = f"http://localhost:3000/reset-password/{token}"
+    msg = Message("Fallnik: reset your password", recipients=[email])
+    msg.body = f"Click the link below to reset your password:\n\n{reset_url}\n\nThis link will expire in 1 hour."
+
+    try:
+        mail.send(msg)
+        return jsonify({'message': 'Reset email sent successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': f'Failed to send email: {str(e)}'}), 500
+    
+
+
+
+
+#Pentru resetarea parolei
+@app.route('/api/reset-password/<token>', methods = ['POST'])
+def reset_password(token):
+    data = request.get_json()
+    new_password = data.get("password")
+
+    if not new_password:
+        return jsonify({'error':'Password is required'}), 400
+    
+    user = User.query.filter_by(reset_token = token).first()
+
+    if not user or not user.reset_token_expiry:
+        return jsonify({'error': 'Invalid or expired token'}), 404
+    
+    #convertire token din DB in aware datetime
+    expiry = user.reset_token_expiry.replace(tzinfo=timezone.utc)
+    if expiry < datetime.now(timezone.utc):
+        return jsonify({'error': 'Expired token'}), 403
+    
+    #Generare de salt nou si hash-uire pentru parola noua
+    new_salt = secrets.token_hex(16)
+    new_hash = hash_password(new_password, new_salt)
+
+    user.salt = new_salt
+    user.password_hash = new_hash
+    user.reset_token = None
+    user.reset_token_expiry = None #invalidam token-ul
+
+    db.session.commit()
+
+    return jsonify({'message' : 'Password reset successfully'}), 200
+
 
 
 

@@ -5,6 +5,8 @@ import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import ConfirmPage from './pages/ConfirmPage';
+import RequestResetPage from './pages/RequestResetPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 
 function App() {
   return (
@@ -20,6 +22,8 @@ function App() {
             </ProtectedRoute>
         }/>
         <Route path = "/confirm/:token" element={<ConfirmPage/>}/>
+        <Route path = "/request-reset" element={<RequestResetPage/>}/>
+        <Route path = "/reset-password/:token" element={<ResetPasswordPage/>} />
       </Routes>
     </div>
   );

@@ -19,6 +19,7 @@ const RegisterPage = () => {
     const [submissionError, setSubmissionError] = useState("");
     const [usernameAvailable, setUsernameAvailable] = useState(null);
     const [emailAvailable, setEmailAvailable] = useState(null);
+    const [registered, setRegistered] = useState(false);
 
     //Functie pentru verificare username in timp real in frontend
     const checkUsername = async (username) => {
@@ -113,7 +114,7 @@ const RegisterPage = () => {
 
             if(response.ok){
                 alert(data.message); //"User registered successfully"
-                //navigate("/login");
+                setRegistered(true);
             }else if(response.status===409){
                 setSubmissionError("Username or email already exists.");
             }else{
@@ -133,6 +134,13 @@ const RegisterPage = () => {
                 <div className="canvas-side">
                     <BookModel/>
                 </div>
+
+                {registered ? (
+                    <div className="login-form">
+                        <h2>Almost there!</h2>
+                        <p>Please check your email and click the confirmation link to activate your account.</p>
+                    </div>
+                ) : (
 
                 <form className="login-form" onSubmit={handleSubmit}>
                     <h2>Create Account</h2>
@@ -229,6 +237,7 @@ const RegisterPage = () => {
                     </p>
 
                 </form>
+                )}
                 </div>
             </div>
 

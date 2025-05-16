@@ -133,6 +133,56 @@ text-decoration: underline;
     margin-bottom: 10px;
   }
 
+.reset-form{
+  background: rgba(71,64,64,0.85);
+  backdrop-filter: blur(10px);
+  padding: 40px;
+  border-radius: 20px;
+  box-shadow: 0 0 20px rgba(255,255,255,0.2);
+  max-width:400px;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.reset-form input{
+  padding: 10px 15px;
+  border: none;
+  border-radius: 10px;
+  background: rgba(255,255,255, 0.2);
+  color: black;
+  font-size: 1rem;
+}
+
+.reset-form input:focus{
+  outline: 3px solid black;
+}
+
+.reset-form input:hover{
+  background-color: #f1f1f1;
+}
+
+.reset-form button{
+  padding: 12px;
+  background: black;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.3s ease;
+}
+
+.reset-form button:hover{
+  background: #161c24;
+}
+
+.reset-message{
+  font-size: 0.9rem;
+  margin-top: 10px;
+}
+
 /* === Telefoane (sub 600px) === */
 @media (max-width: 600px) {
     .login-layout {

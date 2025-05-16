@@ -1,5 +1,6 @@
 import React, {useEffect,useState} from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import "./LoginPage.css";
 
 const ConfirmPage = () => {
     const {token} = useParams();
@@ -30,9 +31,13 @@ const ConfirmPage = () => {
 
     }, [token, navigate]);
 
-    return(
-        <div style={{padding: "40px", textAlign: "center"}}>
-            <h2 style={{color: error ? "red" : "green"}}>{message}</h2>
+    return (
+        <div className="login-page">
+            <div className="login-layout">
+                <div className="login-form">
+                    <h2 style={{ color: error ? "red" : "green" }}>{message}</h2>
+                </div>
+            </div>
         </div>
     );
 
