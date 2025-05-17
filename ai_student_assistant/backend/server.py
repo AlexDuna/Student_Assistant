@@ -5,10 +5,11 @@ import hashlib, secrets, os
 import uuid
 from flask_mail import Mail, Message
 from datetime import datetime, timezone, timedelta
+from flask import make_response
 
 # Flask app initializaton
 app = Flask(__name__)
-CORS(app)               #Accepta cereri de pe alte domenii (adica frontend)
+CORS(app, supports_credentials=True)               #Accepta cereri de pe alte domenii (adica frontend)
 
 # Setam calea catre baza de date SQLite
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -152,7 +153,27 @@ def login():
     if hashed_input != user.password_hash:
         return jsonify({'error' : 'Invalid credentials'}), 401
     
-    return jsonify({'message' : 'Login successful'}), 200
+    #LOGIN REUSIT - se seteaza cookie cu sesiunea
+    response = make_response(jsonify({'message': 'Login successful'}))
+    response.set_cookie(
+        'session_id',
+        user.username,
+        httponly=True,
+        secure=False,       # true pentru ca rulam pe https
+        samesite='Lax',
+        max_age=60*60*24     # 1 zi
+    )
+    return response
+
+
+
+#Endpoint pentru verificare sesiune
+@app.route('/api/check-session', methods=['GET'])
+def check_session():
+    username = request.cookies.get('session_id')
+    if not username: 
+        return jsonify({'authenticated': False}), 401
+    return jsonify({'authenticated': True, 'username' :username}), 200
 
 
 
@@ -240,6 +261,17 @@ def reset_password(token):
     db.session.commit()
 
     return jsonify({'message' : 'Password reset successfully'}), 200
+
+
+
+
+
+#Logout (stergere cookie)
+@app.route('/api/logout', methods=['POST'])
+def logout():
+    response = make_response(jsonify({'message':'Logged out'}))
+    response.set_cookie('session_id', '' , expires = 0)
+    return response
 
 
 

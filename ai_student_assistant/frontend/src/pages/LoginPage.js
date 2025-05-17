@@ -4,6 +4,7 @@ import {Link} from 'react-router-dom';
 import BookModel from '../components/BookModel';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
+import { getCookie } from '../utils/cookies';
 
 const LoginPage = () => {
     const [username, setUsername] = useState('');
@@ -22,6 +23,7 @@ const LoginPage = () => {
                 headers: {
                     'Content-Type' : "application/json"
                 },
+                credentials: 'include',
                 body: JSON.stringify({
                     username: username,
                     password: password
@@ -32,8 +34,7 @@ const LoginPage = () => {
             console.log("Login response:", data);
 
             if(response.ok){
-                alert(data.message);
-                localStorage.setItem('isLoggedIn', 'true');
+                //alert(data.message);
                 navigate('/dashboard'); //Redirectionare catre pagina dashboard
             }else{
                 setErrorMessage(data.error || "Login failed. Please try again.");
