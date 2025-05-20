@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import './LoginPage.css';
 import {Link} from 'react-router-dom';
 import BookModel from '../components/BookModel';
@@ -11,7 +11,32 @@ const LoginPage = () => {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
+    const [checkingSession, setCheckingSession] = useState(true);
     const navigate = useNavigate();
+
+    useEffect(() => {
+        const checkSession = async () => {
+            try {
+                const res = await fetch ("http://localhost:5000/api/check-session", {
+                    method: "GET",
+                    credentials: "include"
+                });
+
+                if(res.ok) {
+                    //deja e logat
+                    navigate("/dashboard");
+                }
+            }catch(err){
+                //sesiunea este invalida sau apare ceva eroare -> ramane in login
+            }finally{
+                setCheckingSession(false);
+            }
+        };
+
+        checkSession();
+    },[navigate]);
+
+    if(checkingSession) return <p>Loading...</p>;
 
     const handleLogin =  async (e) => {
         e.preventDefault();

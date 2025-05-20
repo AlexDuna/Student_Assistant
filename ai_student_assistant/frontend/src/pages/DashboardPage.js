@@ -1,16 +1,51 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCookie } from "../utils/cookies";
 
 const DashboardPage = () => {
     const navigate = useNavigate();
-    const username = getCookie("username");
+    const [username, setUsername] = useState("");
+    const [loading, setLoading] = useState(true);
 
-    const handleLogout = () =>{
-        document.cookie = "isLoggedIn=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-        document.cookie = "username=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-        navigate("/login");
-    }
+    useEffect(() => {
+        const fetchUsername = async () => {
+            try{
+                const res = await fetch ("http://localhost:5000/api/check-session",{
+                    method: "GET",
+                    credentials: "include"
+                });
+
+                if(res.ok){
+                    const data = await res.json();
+                    setUsername(data.username);
+                }else{
+                    navigate("/login");
+                }
+            }catch(err){
+                navigate("login");
+            }finally{
+                setLoading(false);
+            }
+    };
+
+    fetchUsername();
+}, [navigate]);
+
+
+    const handleLogout = async () =>{
+        try{
+            await fetch("http://localhost:5000/api/logout",{
+                method:"POST",
+                credentials:"include"    
+            });
+
+            navigate("/login");
+        }catch(err){
+            console.error("Logout failed", err);
+        }
+    };
+
+    if (loading) return <p> Loading...</p>
 
     return(
         <div style={{ padding: '40px', textAlign: 'center' }}>

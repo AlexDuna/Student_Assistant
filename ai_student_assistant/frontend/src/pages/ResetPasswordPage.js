@@ -1,12 +1,14 @@
-import React, { useState } from "react";
+import React from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import "./LoginPage.css";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import BookModel from "../components/BookModel";
+import { useEffect, useState } from "react";
 
 const ResetPasswordPage = () =>{
     const {token} = useParams();
     const navigate = useNavigate();
+    const [checkingSession, setCheckingSession] = useState(true);
 
     const [form, setForm] = useState({
         password: "",
@@ -18,6 +20,29 @@ const ResetPasswordPage = () =>{
     const [passwordStrength, setPasswordStrength] = useState({label: "", color: "", level: 0});
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
+
+    useEffect (() =>{
+            const checkSession = async () =>{
+                try{
+                    const res = await fetch("http://localhost:5000/api/check-session",{
+                        method: "GET",
+                        credentials: "include"
+                    });
+    
+                    if(res.ok) {
+                        navigate("/dashboard");
+                    }
+                }catch(err){
+                    //nu e logat
+                }finally{
+                    setCheckingSession(false);
+                }
+            };
+    
+            checkSession();
+        }, [navigate]);
+    
+        if(checkingSession) return <p>Loading...</p>;
 
     const evaluatePasswordStrength = (password) => {
         if(password.length < 6 ) 

@@ -1,11 +1,38 @@
-import React, { useState } from "react";
+import React from "react";
 import BookModel from "../components/BookModel";
 import "../pages/LoginPage.css";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const RequestResetPage = () =>{
     const [email, setEmail] = useState("");
     const [message, setMessage] = useState("");
     const [error, setError] = useState("");
+    const [checkingSession, setCheckingSession] = useState(true);
+    const navigate = useNavigate();
+
+    useEffect (() =>{
+        const checkSession = async () =>{
+            try{
+                const res = await fetch("http://localhost:5000/api/check-session",{
+                    method: "GET",
+                    credentials: "include"
+                });
+
+                if(res.ok) {
+                    navigate("/dashboard");
+                }
+            }catch(err){
+                //nu e logat
+            }finally{
+                setCheckingSession(false);
+            }
+        };
+
+        checkSession();
+    }, [navigate]);
+
+    if(checkingSession) return <p>Loading...</p>;
 
     const handleSubmit = async (e) => {
         e.preventDefault();

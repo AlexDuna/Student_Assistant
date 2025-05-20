@@ -1,8 +1,10 @@
-import React, {useState} from "react";
+import React from "react";
 import './LoginPage.css'
 import {Link} from 'react-router-dom';
 import BookModel from "../components/BookModel";
-import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import { FaEye, FaEyeSlash} from 'react-icons/fa';
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const RegisterPage = () => {
     const [form, setForm] = useState({
@@ -20,6 +22,32 @@ const RegisterPage = () => {
     const [usernameAvailable, setUsernameAvailable] = useState(null);
     const [emailAvailable, setEmailAvailable] = useState(null);
     const [registered, setRegistered] = useState(false);
+    const [checkingSession, setCheckingSession] = useState(true);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        const checkSession = async () => {
+            try{
+                const res = await fetch("http://localhost:5000/api/check-session",{
+                    method: "GET",
+                    credentials: "include"
+                });
+                
+                if(res.ok){
+                    //deja logat, redirectionat
+                    navigate("/dashboard");
+                }
+            }catch(err){
+                //nu e logat -> poate ramane pe pagina
+            }finally{
+                setCheckingSession(false);
+            }
+        };
+
+        checkSession();
+    }, [navigate]);
+
+    if(checkingSession) return <p>Loading...</p>;
 
     //Functie pentru verificare username in timp real in frontend
     const checkUsername = async (username) => {

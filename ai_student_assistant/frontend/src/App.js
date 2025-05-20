@@ -7,19 +7,30 @@ import ProtectedRoute from './components/ProtectedRoute';
 import ConfirmPage from './pages/ConfirmPage';
 import RequestResetPage from './pages/RequestResetPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import PublicRoute from './components/PublicRoute';
 
 function App() {
   return (
     <div className='App'>
       <Routes>
         <Route path="/" element={<StartPage/>} />
-        <Route path="/login" element = {<LoginPage />} />
-        <Route path="/register" element = {<RegisterPage/>}/>
+        <Route path="/login" 
+        element = {
+        <PublicRoute>
+          <LoginPage />
+        </PublicRoute>
+        } />
+        <Route path="/register" 
+        element = {
+        <PublicRoute>
+          <RegisterPage/>
+        </PublicRoute>
+        }/>
         <Route path="/dashboard" 
         element = {
-          <ProtectedRoute>
+          <PublicRoute>
             <DashboardPage/>
-            </ProtectedRoute>
+          </PublicRoute>
         }/>
         <Route path = "/confirm/:token" element={<ConfirmPage/>}/>
         <Route path = "/request-reset" element={<RequestResetPage/>}/>

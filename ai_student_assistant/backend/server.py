@@ -163,6 +163,14 @@ def login():
         samesite='Lax',
         max_age=60*60*24     # 1 zi
     )
+    response.set_cookie(
+        'username',
+        user.username,
+        httponly=False,
+        secure=False,
+        samesite='Lax',
+        max_age = 60*60*24
+    )
     return response
 
 
