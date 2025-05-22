@@ -3,6 +3,7 @@ import BookModel from "../components/BookModel";
 import "../pages/LoginPage.css";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { API_URL } from "../utils/config";
 
 const RequestResetPage = () =>{
     const [email, setEmail] = useState("");
@@ -14,7 +15,7 @@ const RequestResetPage = () =>{
     useEffect (() =>{
         const checkSession = async () =>{
             try{
-                const res = await fetch("http://localhost:5000/api/check-session",{
+                const res = await fetch(`${API_URL}/check-session`,{
                     method: "GET",
                     credentials: "include"
                 });
@@ -39,7 +40,7 @@ const RequestResetPage = () =>{
         setMessage(""); setError("");
 
         try{
-            const res = await fetch("http://localhost:5000/api/request-password-reset",{
+            const res = await fetch(`${API_URL}/request-password-reset`,{
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
                 body: JSON.stringify({email})

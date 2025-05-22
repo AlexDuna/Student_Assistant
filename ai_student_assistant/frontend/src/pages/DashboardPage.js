@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getCookie } from "../utils/cookies";
+import { API_URL } from "../utils/config";
 
 const DashboardPage = () => {
     const navigate = useNavigate();
@@ -10,7 +10,7 @@ const DashboardPage = () => {
     useEffect(() => {
         const fetchUsername = async () => {
             try{
-                const res = await fetch ("http://localhost:5000/api/check-session",{
+                const res = await fetch (`${API_URL}/check-session`,{
                     method: "GET",
                     credentials: "include"
                 });
@@ -34,7 +34,7 @@ const DashboardPage = () => {
 
     const handleLogout = async () =>{
         try{
-            await fetch("http://localhost:5000/api/logout",{
+            await fetch(`${API_URL}/logout`,{
                 method:"POST",
                 credentials:"include"    
             });

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
-import { getCookie } from "../utils/cookies";
+import { API_URL } from "../utils/config";
 
 const ProtectedRoute = ({ children }) => {
     const [isAuthenticated, setIsAuthenticated] = useState(null); //null = loading
@@ -8,7 +8,7 @@ const ProtectedRoute = ({ children }) => {
     useEffect(() =>{
         const checkAuth = async () => {
             try{
-                const res = await fetch("http://localhost:5000/api/check-session",{
+                const res = await fetch(`${API_URL}/check-session`,{
                     method: "GET",
                     credentials: "include" // ca sa trimita cookie-ul
                 });

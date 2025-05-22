@@ -6,10 +6,11 @@ import uuid
 from flask_mail import Mail, Message
 from datetime import datetime, timezone, timedelta
 from flask import make_response
+import re
 
 # Flask app initializaton
 app = Flask(__name__)
-CORS(app, supports_credentials=True)               #Accepta cereri de pe alte domenii (adica frontend)
+CORS(app, supports_credentials=True, origins=["https://www.fallnik.com"])               #Accepta cereri de pe alte domenii (adica frontend)
 
 # Setam calea catre baza de date SQLite
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -64,6 +65,10 @@ def register():
     email = data.get("email")
     password = data.get("password")
 
+    # validare username
+    if not re.fullmatch(r'[a-zA-Z0-9.]+', username):
+        return jsonify({'error' : 'Username may only contain letters, numbers and dots'}), 400
+
     #Verificam daca toate campurile au fost completate
     if not username or not email or not password:
         return jsonify({'error': 'Missing fields'}), 400
@@ -93,7 +98,7 @@ def register():
     db.session.commit()
 
     # Link de confirmare (vei modifica când e pe domeniul real)
-    confirm_url = f"http://localhost:3000/confirm/{confirmation_token}"
+    confirm_url = f"https://www.fallnik.com/confirm/{confirmation_token}"
 
     #Constructie mesaj
     msg = Message("Confirm your Fallnik account", recipients = [email])
@@ -159,7 +164,7 @@ def login():
         'session_id',
         user.username,
         httponly=True,
-        secure=False,       # true pentru ca rulam pe https
+        secure=True,       # true pentru ca rulam pe https
         samesite='Lax',
         max_age=60*60*24     # 1 zi
     )
@@ -167,7 +172,7 @@ def login():
         'username',
         user.username,
         httponly=False,
-        secure=False,
+        secure=True,
         samesite='Lax',
         max_age = 60*60*24
     )
@@ -224,7 +229,7 @@ def request_password_reset():
     user.reset_token_expiry = datetime.now(timezone.utc) + timedelta(minutes=30)
     db.session.commit()
 
-    reset_url = f"http://localhost:3000/reset-password/{token}"
+    reset_url = f"https://www.fallnik.com/reset-password/{token}"
     msg = Message("Fallnik: reset your password", recipients=[email])
     msg.body = f"Click the link below to reset your password:\n\n{reset_url}\n\nThis link will expire in 1 hour."
 
@@ -290,7 +295,16 @@ def create_tables():
     with app.app_context():
         db.create_all()
 
+
+@app.after_request
+def add_cors_headers(response):
+    response.headers["Access-Control-Allow-Origin"] = "https://www.fallnik.com"
+    response.headers["Access-Control-Allow-Credentials"] = "true"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+    response.headers["Access-Control-Allow-Methods"] = "GET,POST,OPTIONS"
+    return response
+
 # Pornim serverul
 if __name__ == "__main__":
     create_tables()
-    app.run(debug=True)
+    app.run(debug=False, host="127.0.0.1", port=5000)

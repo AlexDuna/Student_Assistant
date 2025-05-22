@@ -4,7 +4,7 @@ import {Link} from 'react-router-dom';
 import BookModel from '../components/BookModel';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
-import { getCookie } from '../utils/cookies';
+import { API_URL } from '../utils/config';
 
 const LoginPage = () => {
     const [username, setUsername] = useState('');
@@ -17,7 +17,7 @@ const LoginPage = () => {
     useEffect(() => {
         const checkSession = async () => {
             try {
-                const res = await fetch ("http://localhost:5000/api/check-session", {
+                const res = await fetch (`${API_URL}/check-session`, {
                     method: "GET",
                     credentials: "include"
                 });
@@ -43,7 +43,7 @@ const LoginPage = () => {
         setErrorMessage(""); //se reseteaza mesajul de eroare la fiecare submit
 
         try{
-            const response = await fetch("http://localhost:5000/api/login", {
+            const response = await fetch(`${API_URL}/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type' : "application/json"

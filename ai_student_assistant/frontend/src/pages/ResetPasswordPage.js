@@ -4,6 +4,7 @@ import "./LoginPage.css";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import BookModel from "../components/BookModel";
 import { useEffect, useState } from "react";
+import { API_URL } from "../utils/config";
 
 const ResetPasswordPage = () =>{
     const {token} = useParams();
@@ -24,7 +25,7 @@ const ResetPasswordPage = () =>{
     useEffect (() =>{
             const checkSession = async () =>{
                 try{
-                    const res = await fetch("http://localhost:5000/api/check-session",{
+                    const res = await fetch(`${API_URL}/check-session`,{
                         method: "GET",
                         credentials: "include"
                     });
@@ -85,7 +86,7 @@ const ResetPasswordPage = () =>{
         }
 
         try{
-            const res = await fetch(`http://localhost:5000/api/reset-password/${token}`, {
+            const res = await fetch(`${API_URL}/reset-password/${token}`, {
                 method: "POST",
                 headers: {"Content-Type" : "application/json"},
                 body: JSON.stringify({password: form.password})

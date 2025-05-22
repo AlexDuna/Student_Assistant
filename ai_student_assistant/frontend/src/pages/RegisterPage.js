@@ -5,6 +5,7 @@ import BookModel from "../components/BookModel";
 import { FaEye, FaEyeSlash} from 'react-icons/fa';
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { API_URL } from "../utils/config";
 
 const RegisterPage = () => {
     const [form, setForm] = useState({
@@ -28,7 +29,7 @@ const RegisterPage = () => {
     useEffect(() => {
         const checkSession = async () => {
             try{
-                const res = await fetch("http://localhost:5000/api/check-session",{
+                const res = await fetch(`${API_URL}/check-session`,{
                     method: "GET",
                     credentials: "include"
                 });
@@ -51,7 +52,7 @@ const RegisterPage = () => {
 
     //Functie pentru verificare username in timp real in frontend
     const checkUsername = async (username) => {
-        const res = await fetch("http://localhost:5000/api/check-username",{
+        const res = await fetch(`${API_URL}/check-username`,{
             method: "POST",
             headers: { "Content-Type": "application/json"},
             body: JSON.stringify({username}),
@@ -62,7 +63,7 @@ const RegisterPage = () => {
 
     //Functie pentru verificare email in timp real in frontend
     const checkEmail = async (email) =>{
-        const res = await fetch("http://localhost:5000/api/check-email",{
+        const res = await fetch(`${API_URL}/check-email`,{
             method: "POST",
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify({email}),
@@ -88,19 +89,22 @@ const RegisterPage = () => {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setForm({ ...form, [name]: value });
 
         if (name === "password") {
             setPasswordStrength(evaluatePasswordStrength(value));
           }
         
           if(name === "username"){
+            const valid = /^[a-zA-Z0-9.]*$/.test(value);
+            if(!valid) return;
             checkUsername(value);
           }
 
           if(name === "email"){
             checkEmail(value);
           }
+
+          setForm({ ...form, [name]: value });
     };
 
     const handleSubmit = async (e) => {
@@ -126,7 +130,7 @@ const RegisterPage = () => {
         }
 
         try{
-            const response = await fetch("http://localhost:5000/api/register",{
+            const response = await fetch(`${API_URL}/register`,{
                 method: "POST",
                 headers:{
                     "Content-Type" : "application/json"

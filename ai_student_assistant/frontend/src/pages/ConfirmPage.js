@@ -1,6 +1,7 @@
 import React, {useEffect,useState} from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import "./LoginPage.css";
+import { API_URL } from "../utils/config";
 
 const ConfirmPage = () => {
     const {token} = useParams();
@@ -11,7 +12,7 @@ const ConfirmPage = () => {
     useEffect(() => {
         const confirmAccount = async () => {
             try {
-                const res = await fetch(`http://localhost:5000/api/confirm/${token}`);
+                const res = await fetch(`${API_URL}/confirm/${token}`);
                 const data = await res.json();
 
                 if(res.ok){
