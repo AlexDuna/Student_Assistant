@@ -12,6 +12,8 @@ import re
 app = Flask(__name__)
 CORS(app, supports_credentials=True, origins=["https://www.fallnik.com"])               #Accepta cereri de pe alte domenii (adica frontend)
 
+
+
 # Setam calea catre baza de date SQLite
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 db_path = os.path.join(BASE_DIR, 'fallnik.db')
@@ -285,9 +287,6 @@ def logout():
     response = make_response(jsonify({'message':'Logged out'}))
     response.set_cookie('session_id', '' , expires = 0)
     return response
-
-
-
 
 
 # DataBase initialization (crearea automata a tabelului)
