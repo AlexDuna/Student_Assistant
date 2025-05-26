@@ -7,10 +7,26 @@ from flask_mail import Mail, Message
 from datetime import datetime, timezone, timedelta
 from flask import make_response
 import re
+from dotenv import load_dotenv
+from openai import OpenAI
+import fitz #PyMuPDF pentru extragere continut din PDF
+from docx import Document
+from werkzeug.utils import secure_filename 
+from flask import session #pentru ca ai-ul sa retina contextul rezumatului pe care il facem si sa raspunda la intrebari bazate pe el
+
+#Incarcare variabile din .env
+load_dotenv()
+
+#Setare cheie OpenAI
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # Flask app initializaton
 app = Flask(__name__)
 CORS(app, supports_credentials=True, origins=["https://www.fallnik.com"])               #Accepta cereri de pe alte domenii (adica frontend)
+
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024 #50MB
+
+app.secret_key = os.getenv("SECRET_KEY", "fallback-secret") #adaugam o cheie de sesiune (pentru ai-ul care va retine contextul rezumatelor facute in FallnikAI)
 
 
 
@@ -51,9 +67,9 @@ def hash_password(password, salt):
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'micalex607@gmail.com'
-app.config['MAIL_PASSWORD'] = 'uudt inhh krxz obza'
-app.config['MAIL_DEFAULT_SENDER'] = 'Fallnik <micalex607@gmail.com>'
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER')
 
 mail = Mail(app)
 
@@ -289,6 +305,160 @@ def logout():
     return response
 
 
+
+
+
+#Endpoint pagina ai
+@app.route('/api/ask-ai', methods=['POST'])
+def ask_ai():
+    data=request.get_json()
+    question= data.get("question")
+
+    if not question:
+        return jsonify({'error' : 'Question is required'}), 400
+    
+    #Verificam daca exista o lectie salvata anterior
+    lesson_context = session.get("lesson_context")
+
+    #Construim mesajele pentru AI
+    messages = [
+        {
+            "role" : "system",
+            "content" : "You are Fallnik, an intelligent AI assistant designed to help students understand uploaded lessons and answer their questions clearly and supportively.",
+        }
+    ]
+
+    if lesson_context:
+        messages.append({
+            "role" : "user",
+            "content" : f"This is the lesson context: \n{lesson_context}"
+        })
+
+    messages.append({
+        "role":"user",
+        "content": question
+    })
+    
+    try:
+        response = client.chat.completions.create(
+            model = "gpt-3.5-turbo",
+            messages=messages,
+            max_tokens = 600,
+            temperature = 0.7
+        )
+
+        answer = response.choices[0].message.content.strip()
+        return jsonify({'answer' : answer})
+    
+    except Exception as e:
+        print("OpenAI Error: ", e)
+        return jsonify({'error': 'Ai request failed'}), 500
+    
+
+
+
+
+#Upload fisiere
+@app.route('/api/upload-material', methods=['POST'])
+def upload_material():
+    file= request.files.get('file')
+
+    if not file:
+        return jsonify({'error': 'No file uploaded'}), 400
+    
+    filename = secure_filename(file.filename)
+    extension = filename.rsplit('.', 1)[-1].lower()
+
+    try:
+        if extension == 'pdf':
+            doc = fitz.open(stream=file.read(), filetype="pdf")
+            text="\n".join(page.get_text() for page in doc)
+
+        elif extension in ['doc', 'docx']:
+            docx_file = Document(file)
+            text = "\n".join(p.text for p in docx_file.paragraphs)
+
+        elif extension == 'txt':
+            text = file.read().decode('utf-8')
+
+        else:
+            return jsonify({'error': 'Unsupported file type'}), 400
+        
+        if len(text.strip()) < 20:
+            return jsonify({'error' : 'File seems empty or unreadable'}), 400
+        
+        #Trimitere catre OpenAI pentru rezumat
+        prompt = (
+            "Please summarize the following material in the **same language** it is written in. "
+            "Keep the summary short and focused."
+            "Do not omit technical details if relevant to understanding."
+            "Make it clear and well-structured for a student who is trying to learn. "
+            "Highlight only the most important concepts and essential information. \n\n" + text[:12000]
+        )
+
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are Fallnik, an intelligent assistant designed to help students learn better. "
+                 "Always respond in the **same language** as the inpus unless explicitly told otherwise."},
+                {"role":"user", "content":prompt}
+            ],
+            max_tokens=700,
+            temperature=0.6
+        )
+
+        summary = response.choices[0].message.content.strip()
+        session['lesson_context'] = summary #stocam rezumatul in sesiune
+
+        #Extragem subiectul principal al rezumatului
+        try:
+            title_response = client.chat.completions.create(
+                model= "gpt-3.5-turbo",
+                messages=[
+                    {
+                        "role" : "system",
+                        "content" : "Extract only the main topic or subject from this summary in a few words. Respond only with the topic."
+                    },
+                    {
+                        "role" : "user",
+                        "content" : summary
+                    }
+                ],
+                max_tokens = 20,
+                temperature=0.3
+            )
+
+            topic = title_response.choices[0].message.content.strip().strip('"')
+
+        except Exception as e:
+            print("Topic extraction failed: ", e)
+            topic = "this lesson"
+
+        chat_message = (
+            f"I notice you generated a summary about **{topic}**. "
+            "Do you have any questions on this topic that I can help you with?"
+        )
+
+        return jsonify({
+            'summary' : summary,
+            'chat_message': chat_message
+            })
+    
+    except Exception as e:
+        print("Upload/AI error: ", e)
+        return jsonify({'error': 'Failed to process file'}), 500
+    
+
+
+
+#Resetare context lectie pentru AI bot
+@app.route('/api/reset-lesson-context', methods=['POST'])
+def reset_lesson_context():
+    session.pop('lesson_context', None)
+    return jsonify({'message' : 'Lesson context cleared'}), 200
+
+
+
 # DataBase initialization (crearea automata a tabelului)
 def create_tables():
     with app.app_context():
@@ -299,7 +469,7 @@ def create_tables():
 def add_cors_headers(response):
     response.headers["Access-Control-Allow-Origin"] = "https://www.fallnik.com"
     response.headers["Access-Control-Allow-Credentials"] = "true"
-    response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
     response.headers["Access-Control-Allow-Methods"] = "GET,POST,OPTIONS"
     return response
 

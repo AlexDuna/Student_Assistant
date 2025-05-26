@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_URL } from "../utils/config";
-import "./DashboardPage.css"
+import "./DashboardPage.css";
 import Navbar from "../components/Navbar";
 
 const DashboardPage = () => {

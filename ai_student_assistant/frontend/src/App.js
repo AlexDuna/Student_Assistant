@@ -8,6 +8,7 @@ import ConfirmPage from './pages/ConfirmPage';
 import RequestResetPage from './pages/RequestResetPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import PublicRoute from './components/PublicRoute';
+import FallnikAIPage from './pages/FallnikAIPage';
 
 function App() {
   return (
@@ -35,6 +36,14 @@ function App() {
         <Route path = "/confirm/:token" element={<ConfirmPage/>}/>
         <Route path = "/request-reset" element={<RequestResetPage/>}/>
         <Route path = "/reset-password/:token" element={<ResetPasswordPage/>} />
+        <Route 
+          path="/dashboard/ai"
+          element={
+            <ProtectedRoute>
+              <FallnikAIPage/>
+            </ProtectedRoute>
+          }
+          />
       </Routes>
     </div>
   );
