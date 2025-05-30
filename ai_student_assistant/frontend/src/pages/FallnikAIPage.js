@@ -11,6 +11,7 @@ const FallnikAIPage = () => {
     const [summary, setSummary] = useState("");
     const [uploadLoading, setUploadLoading] = useState(false);
     const [uploadError, setUploadError] = useState("");
+    const [downloadUrl, setDownloadUrl] = useState("");
 
     useEffect(() => {
         if(bottomRef.current){
@@ -79,6 +80,7 @@ const FallnikAIPage = () => {
 
             if(res.ok){
                 setSummary(data.summary);
+                setDownloadUrl(data.download_url);
                 if(data.chat_message){
                     setMessages(prev => [...prev, {sender: "ai", text: data.chat_message}]);
                 }
@@ -116,7 +118,7 @@ const FallnikAIPage = () => {
                 />
                 <button onClick={handleSendMessage}>Send</button>
             </div>
-            {loading && <div className="typing-indicator">AI writes... </div>}
+            {loading && <div className="typing-indicator">Fallnik writes... </div>}
 
             <hr />
 
@@ -133,6 +135,13 @@ const FallnikAIPage = () => {
                 <div className="summary-section">
                     <h3>Summary</h3>
                     <div className="summary-content">{summary}</div>
+                    {downloadUrl && (
+                        <div className="download-link">
+                            <a href={downloadUrl} target="_blank" rel="noopener noreferrer" download>
+                                Download the summary.
+                            </a>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
