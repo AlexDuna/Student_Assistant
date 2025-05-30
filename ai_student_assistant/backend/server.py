@@ -13,6 +13,7 @@ import fitz #PyMuPDF pentru extragere continut din PDF
 from docx import Document
 from werkzeug.utils import secure_filename 
 from flask import session #pentru ca ai-ul sa retina contextul rezumatului pe care il facem si sa raspunda la intrebari bazate pe el
+from fpdf import FPDF
 
 #Incarcare variabile din .env
 load_dotenv()
@@ -410,6 +411,29 @@ def upload_material():
         summary = response.choices[0].message.content.strip()
         session['lesson_context'] = summary #stocam rezumatul in sesiune
 
+        #Cream un PDF in care vom salva rezumatul si il vom oferi ca download
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_auto_page_break(auto=True, margin=15)
+        font_path = os.path.join(os.path.dirname(__file__), 'DejaVuSans.ttf')
+        pdf.add_font('DejaVu', '', font_path, uni=True)
+        pdf.set_font("DejaVu", size=12)
+
+        #Adaugam continutul rezumatului
+        for line in summary.split('\n'):
+            pdf.multi_cell(0, 10, line)
+
+        #Salvare cu nume unic
+        filename = f"{uuid.uuid4().hex}_summary.pdf"
+        save_dir = "/var/www/fallnik.com/static/summaries"
+        os.makedirs(save_dir, exist_ok=True)
+        file_path = os.path.join(save_dir, filename)
+        pdf.output(file_path)
+
+        #Link de download
+        download_url = f"https://www.fallnik.com/static/summaries/{filename}"
+
+
         #Extragem subiectul principal al rezumatului
         try:
             title_response = client.chat.completions.create(
@@ -441,7 +465,8 @@ def upload_material():
 
         return jsonify({
             'summary' : summary,
-            'chat_message': chat_message
+            'chat_message': chat_message,
+            'download_url' : download_url
             })
     
     except Exception as e:

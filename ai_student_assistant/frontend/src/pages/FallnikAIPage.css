@@ -116,3 +116,20 @@ h2{
     margin-top: 10px;
 }
 
+.download-link{
+    margin-top: 15px;
+}
+
+.download-link a{
+    background: #4f46e5;
+    color: white;
+    padding: 10px 14px;
+    border-radius: 8px;
+    text-decoration: none;
+    display: inline-block;
+    transition: background 0.3s;
+}
+
+.download-link a:hover{
+    background: #3730a3;
+}
