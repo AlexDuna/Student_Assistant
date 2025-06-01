@@ -133,3 +133,35 @@ h2{
 .download-link a:hover{
     background: #3730a3;
 }
+
+.quiz-item{
+    margin-bottom: 20px;
+}
+
+.quiz-feedback.correct{
+    background: #d4edda;
+    padding: 10px;
+    margin-top: 10px;
+}
+
+.quiz-feedback.incorrect{
+    background: #f8d7da;
+    padding: 10px;
+    margin-top: 10px;
+}
+
+.quiz-results{
+    margin-top: 30px;
+}
+
+.quiz-fieldset{
+    margin-bottom: 20px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+}
+
+.error-message{
+    color: red;
+    margin-top: 10px;
+}

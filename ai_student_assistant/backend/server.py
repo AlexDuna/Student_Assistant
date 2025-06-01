@@ -14,6 +14,7 @@ from docx import Document
 from werkzeug.utils import secure_filename 
 from flask import session #pentru ca ai-ul sa retina contextul rezumatului pe care il facem si sa raspunda la intrebari bazate pe el
 from fpdf import FPDF
+import json
 
 #Incarcare variabile din .env
 load_dotenv()
@@ -391,10 +392,9 @@ def upload_material():
         #Trimitere catre OpenAI pentru rezumat
         prompt = (
             "Please summarize the following material in the **same language** it is written in. "
-            "Keep the summary short and focused."
-            "Do not omit technical details if relevant to understanding."
-            "Make it clear and well-structured for a student who is trying to learn. "
-            "Highlight only the most important concepts and essential information. \n\n" + text[:12000]
+            "Organize the summary using a **bullet points** (e.g., •), where each idea or key point is on its own line. "
+            "Keep it concise, but do not omit technical or essential educational content. "
+            "Make sure the summary is structured and useful for a student trying to learn from this material.\n\n" + text[:12000]
         )
 
         response = client.chat.completions.create(
@@ -411,30 +411,7 @@ def upload_material():
         summary = response.choices[0].message.content.strip()
         session['lesson_context'] = summary #stocam rezumatul in sesiune
 
-        #Cream un PDF in care vom salva rezumatul si il vom oferi ca download
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.set_auto_page_break(auto=True, margin=15)
-        font_path = os.path.join(os.path.dirname(__file__), 'DejaVuSans.ttf')
-        pdf.add_font('DejaVu', '', font_path, uni=True)
-        pdf.set_font("DejaVu", size=12)
-
-        #Adaugam continutul rezumatului
-        for line in summary.split('\n'):
-            pdf.multi_cell(0, 10, line)
-
-        #Salvare cu nume unic
-        filename = f"{uuid.uuid4().hex}_summary.pdf"
-        save_dir = "/var/www/fallnik.com/static/summaries"
-        os.makedirs(save_dir, exist_ok=True)
-        file_path = os.path.join(save_dir, filename)
-        pdf.output(file_path)
-
-        #Link de download
-        download_url = f"https://www.fallnik.com/static/summaries/{filename}"
-
-
-        #Extragem subiectul principal al rezumatului
+    #Extragem subiectul principal al rezumatului
         try:
             title_response = client.chat.completions.create(
                 model= "gpt-3.5-turbo",
@@ -456,7 +433,45 @@ def upload_material():
 
         except Exception as e:
             print("Topic extraction failed: ", e)
-            topic = "this lesson"
+            topic = "this lesson"    
+
+        #Cream un PDF in care vom salva rezumatul si il vom oferi ca download
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_auto_page_break(auto=True, margin=15)
+
+        #Font
+        font_path = os.path.join(os.path.dirname(__file__), 'DejaVuSans.ttf')
+        pdf.add_font('DejaVu', '', font_path, uni=True)
+        pdf.add_font('DejaVu', 'B', font_path, uni=True)
+
+        #Titlu cu topicul generat de AI
+        pdf.set_font("DejaVu", 'B', size=16)
+        pdf.cell(0, 10, f"Summary: {topic}", ln=True, align='C')
+        pdf.ln(5)
+
+        #Continut rezumat
+        for line in summary.split('\n'):
+            line = line.strip()
+            if not line:
+                continue
+            if line.startswith("•"):
+                pdf.set_font("DejaVu", 'B', size=12)
+            else:
+                pdf.set_font("DejaVu", '', size=11)
+            pdf.multi_cell(0,6,line)
+            pdf.ln(1)
+
+        #Salvare cu nume unic
+        filename = f"{uuid.uuid4().hex}_summary.pdf"
+        save_dir = "/var/www/fallnik.com/html/static/summaries"
+        os.makedirs(save_dir, exist_ok=True)
+        file_path = os.path.join(save_dir, filename)
+        pdf.output(file_path)
+
+        #Link de download
+        download_url = f"https://www.fallnik.com/static/summaries/{filename}"
+
 
         chat_message = (
             f"I notice you generated a summary about **{topic}**. "
@@ -472,6 +487,138 @@ def upload_material():
     except Exception as e:
         print("Upload/AI error: ", e)
         return jsonify({'error': 'Failed to process file'}), 500
+    
+
+
+#Generare quiz pentru testare    
+@app.route('/api/generate-quiz', methods=['POST'])
+def generate_quiz():
+    data = request.get_json()
+    quiz_type = data.get("quiz_type")   #multiple_choice sau open_ended
+    summary = session.get("lesson_context")
+
+    if not summary:
+        return jsonify({'error' : 'No summary available in session'}), 400
+    
+    if quiz_type not in ["multiple_choice", "open_ended"]:
+        return jsonify({'error' : 'Invalid quiz type'}), 400
+    
+    #Prompt adaptat in functie de tipul de quiz
+    if quiz_type == "multiple_choice":
+        prompt=(
+            "From the following summarized lesson, generate one multiple choice question for each bullet point. "
+            "Each question should have one correct answer and three plausible but incorrect options. "
+            "Respond as a JSON list of objects in this format:\n"
+            "[{\"question\": \"...\", \"options\": [\"...\", \"...\", \"...\", \"...\"], \"answer\": \"...\"}]\n\n"
+            "Summary:\n" + summary
+        )
+    else:
+        prompt=(
+            "From the following summarized lesson, generate one open-ended question for each bullet point, "
+            "and provide the correct answer for each. "
+            "Respond as a JSON list of objects in this format:\n"
+            "[{\"question\": \"...\", \"answer\": \"...\"}]\n\n"
+            "Summary:\n" + summary
+        )
+    
+    try:
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {
+                    "role" : "system",
+                    "content" : "You are Fallnik, a helpful student assistant that creates educational quizzez based on lesson summaries."
+                },
+                {
+                    "role" : "user",
+                    "content" : prompt
+                }
+            ],
+            temperature=0.7,
+            max_tokens=1500
+        )
+
+        quiz_data_raw = response.choices[0].message.content.strip()
+
+        #pastram JSON-ul
+        try:
+            quiz_data = json.loads(quiz_data_raw)
+        except json.JSONDecodeError:
+            #in caz ca ai-ul a returnat text extra, extragem doar partea JSON
+            quiz_data_raw = re.search(r'\[.*\]', quiz_data_raw, re.DOTALL)
+            if quiz_data_raw:
+                quiz_data = json.loads(quiz_data_raw.group())
+            else:
+                return jsonify({'error': 'AI response was not in valid JSON format'}), 500
+            
+        #minim 3 intrebari in quiz
+        if len(quiz_data) < 3:
+            return jsonify({'error' : 'Generated quiz is too short'}),400
+        
+        #Salvam quiz-ul si tipul in sesiune pentru utilizare ulterioara
+        session['generated_quiz'] = quiz_data
+        session['quiz_type'] = quiz_type
+            
+        return jsonify({'quiz' : quiz_data, 'quiz_type' : quiz_type})
+    
+    except Exception as e:
+        print("Quiz generation error: ", e)
+        return jsonify({'error': 'Failed to generate quiz'}), 500
+
+        
+
+
+
+#Verificare quiz
+@app.route('/api/verify-quiz', methods=['POST'])
+def verify_quiz():
+    user_answers = request.get_json().get("answers")
+    quiz_data = session.get("generated_quiz")
+    quiz_type = session.get("quiz_type")
+
+    if not quiz_data or not quiz_type:
+        return jsonify({'error' : 'No quiz in session.'}), 400
+    
+    if not user_answers or not isinstance(user_answers, list) or len(user_answers) != len(quiz_data):
+        return jsonify({'error' : 'Invalid or incomplete answers'}), 400
+
+    results = []
+    correct_count = 0
+
+    for i, user_answer in enumerate(user_answers):
+        question_data = quiz_data[i]
+        correct_answer = question_data.get("answer", "").strip()
+
+        user_answer = (user_answer or "").strip()
+
+        print("Received answers:", user_answers)
+        print("Expected quiz:", quiz_data)
+
+        #Pentru multiple_choice: comparare directa
+        if quiz_type == "multiple_choice":
+            is_correct = user_answer.strip() == correct_answer.strip()
+        else:
+            #Pentru open_ended comparare toleranta (lowercase, eliminare spatii)
+            is_correct = user_answer.strip().lower() == correct_answer.strip().lower()
+
+        results.append({
+            "question" : question_data["question"],
+            "your_answer" : user_answer,
+            "correct_answer" : correct_answer,
+            "is_correct": is_correct
+        })
+
+        if is_correct:
+            correct_count += 1
+
+    score = f"{correct_count}/{len(quiz_data)}"
+    return jsonify({
+        'score' : score, 
+        'correct' : correct_count,
+        'total' : len(quiz_data),
+        'results':results
+        })
+
     
 
 

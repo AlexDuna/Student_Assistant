@@ -13,6 +13,16 @@ const FallnikAIPage = () => {
     const [uploadError, setUploadError] = useState("");
     const [downloadUrl, setDownloadUrl] = useState("");
 
+    const [quizType, setQuizType] = useState(null);
+    const [quizData, setQuizData] = useState([]);
+    const [quizAnswers, setQuizAnswers] = useState([]);
+    const [quizResults, setQuizResults] = useState(null);
+    const [quizLoading, setQuizLoading] = useState(false);
+    const [quizError, setQuizError] = useState("");
+
+    const quizRef = useRef(null);
+
+
     useEffect(() => {
         if(bottomRef.current){
             bottomRef.current.scrollIntoView({behavior: "smooth"});
@@ -94,6 +104,56 @@ const FallnikAIPage = () => {
         setUploadLoading(false);
     };
 
+    const generateQuiz = async (type) => {
+        setQuizType(type);
+        setQuizLoading(true);
+        setQuizResults(null);
+        setQuizError("")
+        try{
+            const res = await fetch("https://www.fallnik.com/api/generate-quiz",{
+                method: "POST",
+                headers: { "Content-Type" : "application/json"},
+                credentials : "include",
+                body: JSON.stringify({quiz_type : type}),
+            });
+
+            const data = await res.json();
+            if(res.ok){
+                setQuizData(data.quiz);
+                setTimeout(() => {
+                    quizRef.current?.scrollIntoView({behavior: "smooth"});
+                }, 100);
+                setQuizAnswers(Array(data.quiz.length).fill("")); //initlizare answers
+            }else{
+                setQuizError(data.error || "Failed to generate quiz.");
+            }
+        }catch{
+            setQuizError("Network error submitting quiz.");
+        }
+        setQuizLoading(false);
+    };
+
+    const submitQuiz = async () => {
+        setQuizError("");
+        try{
+            const res = await fetch("https://www.fallnik.com/api/verify-quiz",{
+                method: "POST",
+                headers: { "Content-Type" : "application/json"},
+                credentials: "include",
+                body: JSON.stringify({answers : quizAnswers}),
+            });
+
+            const data = await res.json();
+            if(res.ok){
+                setQuizResults(data);
+            }else{
+                setQuizError(data.error || "Failed to generate quiz.");
+            }
+        }catch{
+            setQuizError("Network error submitting quiz.");
+        }
+    };
+
 
     return(
         <div className="ai-page">
@@ -142,6 +202,77 @@ const FallnikAIPage = () => {
                             </a>
                         </div>
                     )}
+                </div>
+            )}
+
+            {summary && !quizData.length && (
+                <div className="quiz-options">
+                    <h3>Want to test yourself?</h3>
+                    <button onClick={() => generateQuiz("multiple_choice")}>Multiple Choice Quiz</button>
+                    <button onClick={() => generateQuiz("open_ended")}>Open Ended Quiz</button>
+                </div>
+            )}
+
+            {quizLoading && <p>Your quiz is being generated...</p>}
+
+            {quizData.length > 0 && (
+                <div ref={quizRef} className="quiz-selection">
+                    <h3>Your ({quizType === "multiple_choice" ? "Multiple Choice" : "Open Ended"}) Quiz</h3>
+                    {quizData.map((item, index) => (
+                        <fieldset key={index} className="quiz-item quiz-fieldset">
+                            <legend><strong>{index + 1}. {item.question}</strong></legend>
+
+                            {quizType === "multiple_choice" ? (
+                                item.options.map((opt, optIdx) => {
+                                    const inputId = `q${index}_opt${optIdx}`;
+                                    return(
+                                    <div key = {optIdx}>
+                                        <input 
+                                            id={inputId}
+                                            type = "radio"
+                                            name = {`q${index}`}
+                                            value = {opt}
+                                            checked = {quizAnswers[index] === opt}
+                                            onChange={() => {
+                                                const newAnswers = [...quizAnswers];
+                                                newAnswers[index] = opt;
+                                                setQuizAnswers(newAnswers);
+                                            }}
+                                        />
+                                        <label htmlFor={inputId}>{opt}</label>
+                                    </div>
+                                    );
+                            })
+                            ):(
+                                <input 
+                                    type = "text"
+                                    value = {quizAnswers[index]}
+                                    onChange={(e) => {
+                                        const newAnswers = [...quizAnswers];
+                                        newAnswers[index] = e.target.value;
+                                        setQuizAnswers(newAnswers);
+                                    }}
+                                    placeholder="Your answer"
+                                />
+                            )}
+                        </fieldset>
+                    ))}
+
+                    <button onClick={submitQuiz}> Submit Quiz</button>
+
+                </div>
+            )}
+
+            {quizResults && (
+                <div className="quiz-results">
+                    <h4> Result: {quizResults.score}</h4>
+                    {quizResults.results.map((r,i) => (
+                        <div key={i} className={`quiz-feedback ${r.is_correct ? "correct" : "incorrect" }`}>
+                            <p><strong>{i + 1}. {r.question}</strong></p>
+                            <p>Your answer: <em>{r.your_answer}</em></p>
+                            {!r.is_correct && <p>✔ RIGHT Answer: <strong>{r.correct_answer || "Unavailable"}</strong></p>}
+                        </div>
+                    ))}
                 </div>
             )}
         </div>
