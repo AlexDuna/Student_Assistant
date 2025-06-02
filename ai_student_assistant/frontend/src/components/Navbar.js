@@ -24,7 +24,7 @@ return (
     <nav className="navbar">
         <div className="navbar-left">
             <img 
-                src="FallnikLogo.png"
+                src="/FallnikLogo.png"
                 alt="logo"
                 className="logo-image"
             />
@@ -39,7 +39,7 @@ return (
         </div>
 
             <img
-                src="default-avatar.png"
+                src="/default-avatar.png"
                 alt="avatar"
                 className="avatar"
                 onClick={() => setMenuOpen((prev) => !prev)}

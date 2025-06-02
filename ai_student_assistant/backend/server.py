@@ -15,6 +15,7 @@ from werkzeug.utils import secure_filename
 from flask import session #pentru ca ai-ul sa retina contextul rezumatului pe care il facem si sa raspunda la intrebari bazate pe el
 from fpdf import FPDF
 import json
+from difflib import SequenceMatcher
 
 #Incarcare variabile din .env
 load_dotenv()
@@ -305,10 +306,7 @@ def logout():
     response = make_response(jsonify({'message':'Logged out'}))
     response.set_cookie('session_id', '' , expires = 0)
     return response
-
-
-
-
+    
 
 #Endpoint pagina ai
 @app.route('/api/ask-ai', methods=['POST'])
@@ -343,9 +341,9 @@ def ask_ai():
     
     try:
         response = client.chat.completions.create(
-            model = "gpt-3.5-turbo",
+            model = "gpt-4-turbo",
             messages=messages,
-            max_tokens = 600,
+            max_tokens = 700,
             temperature = 0.7
         )
 
@@ -394,17 +392,17 @@ def upload_material():
             "Please summarize the following material in the **same language** it is written in. "
             "Organize the summary using a **bullet points** (e.g., •), where each idea or key point is on its own line. "
             "Keep it concise, but do not omit technical or essential educational content. "
-            "Make sure the summary is structured and useful for a student trying to learn from this material.\n\n" + text[:12000]
+            "Make sure the summary is structured and useful for a student trying to learn from this material.\n\n" + text[:10000]
         )
 
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4-turbo",
             messages=[
                 {"role": "system", "content": "You are Fallnik, an intelligent assistant designed to help students learn better. "
                  "Always respond in the **same language** as the inpus unless explicitly told otherwise."},
                 {"role":"user", "content":prompt}
             ],
-            max_tokens=700,
+            max_tokens=900,
             temperature=0.6
         )
 
@@ -414,7 +412,7 @@ def upload_material():
     #Extragem subiectul principal al rezumatului
         try:
             title_response = client.chat.completions.create(
-                model= "gpt-3.5-turbo",
+                model= "gpt-4-turbo",
                 messages=[
                     {
                         "role" : "system",
@@ -473,10 +471,50 @@ def upload_material():
         download_url = f"https://www.fallnik.com/static/summaries/{filename}"
 
 
-        chat_message = (
-            f"I notice you generated a summary about **{topic}**. "
-            "Do you have any questions on this topic that I can help you with?"
-        )
+        #Detectam limba rezumatului ca sa putem sa generam un raspuns al AI-ului in chatbot in limba in care rezumatul a fost scris
+        try:
+            language_detect = client.chat.completions.create(
+                model="gpt-4-turbo",
+                messages=[
+                    {
+                        "role" : "system",
+                        "content" : "Detect the language of the following summary. Respond with the language name in English, e.g., 'Romanian', 'English', 'French'."
+                    },
+                    {
+                        "role" : "user",
+                        "content" : summary
+                    }
+                ],
+                max_tokens = 10,
+                temperature = 0
+            )
+            language = language_detect.choices[0].message.content.strip()
+        except Exception as e:
+            print("Language detection failed: ", e)
+            language = "English"
+
+        #Generam mesajul in limba detectata
+        try:
+            localized_prompt = (
+                f"Generate a friendly and short follow-up message in {language}. "
+                f"It should mention that the user has generated a summary about \"{topic}\" and ask if they have questions on this topic. "
+                "Be natural and student-friendly. Do not include any explanations or translations."
+            )
+
+            chat_msg_resp = client.chat.completions.create(
+                model="gpt-4-turbo",
+                messages = [
+                    {"role" : "system", "content" : "You are Fallnik, a helpful assistant that communicates with students in their own language."},
+                    {"role" : "user" , "content" : localized_prompt}
+                ],
+                max_tokens = 60,
+                temperature = 0.6
+            )
+
+            chat_message = chat_msg_resp.choices[0].message.content.strip()
+        except Exception as e:
+            print("Chat message generation failed: ", e)
+            chat_message= f"I notice you generated a summary about **{topic}**. Do you have any questions on this topic?"
 
         return jsonify({
             'summary' : summary,
@@ -504,26 +542,30 @@ def generate_quiz():
         return jsonify({'error' : 'Invalid quiz type'}), 400
     
     #Prompt adaptat in functie de tipul de quiz
+    prompt = (
+        f"From the following summarized lesson, generate one {'multiple choice' if quiz_type == 'multiple_choice' else 'open-ended'} question for each bullet point. "
+        "All questions and answers must be in the **same language** as the summary text. "
+    )
+
     if quiz_type == "multiple_choice":
-        prompt=(
-            "From the following summarized lesson, generate one multiple choice question for each bullet point. "
+        prompt +=(
             "Each question should have one correct answer and three plausible but incorrect options. "
             "Respond as a JSON list of objects in this format:\n"
             "[{\"question\": \"...\", \"options\": [\"...\", \"...\", \"...\", \"...\"], \"answer\": \"...\"}]\n\n"
-            "Summary:\n" + summary
         )
     else:
-        prompt=(
-            "From the following summarized lesson, generate one open-ended question for each bullet point, "
-            "and provide the correct answer for each. "
+        prompt +=(
+            "Provide the correct answer for each. "
             "Respond as a JSON list of objects in this format:\n"
             "[{\"question\": \"...\", \"answer\": \"...\"}]\n\n"
-            "Summary:\n" + summary
         )
+
+    prompt += "Make sure all content is written in the same language as the summary.\n\n"
+    prompt += f"Summary: \n{summary}"
     
     try:
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4-turbo",
             messages=[
                 {
                     "role" : "system",
@@ -534,8 +576,8 @@ def generate_quiz():
                     "content" : prompt
                 }
             ],
-            temperature=0.7,
-            max_tokens=1500
+            temperature=0.5,
+            max_tokens=2000
         )
 
         quiz_data_raw = response.choices[0].message.content.strip()
@@ -565,8 +607,11 @@ def generate_quiz():
         print("Quiz generation error: ", e)
         return jsonify({'error': 'Failed to generate quiz'}), 500
 
-        
 
+
+#Functie verificare similaritate raspuns user din open-ended quiz cu raspunsul corect        
+def is_similar(a, b, threshold=0.75):
+    return SequenceMatcher(None, a.lower().strip(), b.lower().strip()).ratio() >= threshold
 
 
 #Verificare quiz
@@ -599,7 +644,33 @@ def verify_quiz():
             is_correct = user_answer.strip() == correct_answer.strip()
         else:
             #Pentru open_ended comparare toleranta (lowercase, eliminare spatii)
-            is_correct = user_answer.strip().lower() == correct_answer.strip().lower()
+            is_correct = is_similar(user_answer, correct_answer)
+
+            #fallback AI semantic, verificam daca similaritatea e sub threshold
+            if not is_correct:
+                ai_check_prompt = (
+                    f"You are an educational assistant. A student has answered an open-ended quiz question. "
+                    f"Determine whether the student's answer is semantically equivalent to the correct one.\n\n"
+                    f"Question: {question_data['question']}\n"
+                    f"Correct answer: {correct_answer}\n"
+                    f"Student's answer: {user_answer}\n\n"
+                    "Respond with only 'yes' or 'no'."
+                )
+
+                try:
+                    ai_resp = client.chat.completions.create(
+                        model = "gpt-4-turbo",
+                        messages=[{ "role": "user" , "content": ai_check_prompt}],
+                        temperature = 0,
+                        max_tokens = 5
+                    )
+
+                    ai_answer = ai_resp.choices[0].message.content.strip().lower()
+                    if ai_answer.startswith("yes"):
+                        is_correct = True
+
+                except Exception as e:
+                    print(f"[AI Semantic Check] Fallback failed: {e}")
 
         results.append({
             "question" : question_data["question"],
@@ -620,6 +691,59 @@ def verify_quiz():
         })
 
     
+
+
+#Mesaj de welcome de la AI in chatbox
+@app.route('/api/welcome-message', methods=['GET'])
+def welcome_message():
+    try:
+        #incercam sa detectam limba din rezumatul anterior daca exista
+        summary = session.get("lesson_context", "")
+        detected_language = "English" #by default
+
+        if summary:
+            try:
+                detect_response = client.chat.completions.create(
+                    model = "gpt-3.5-turbo",
+                    messages = [
+                        {
+                        "role" : "system",
+                        "content" : "Detect the language of the following summary. Respond only with the language name in English, like 'Romanian', 'French', 'English'."
+                        },
+                        {
+                            "role" : "user",
+                            "content" : summary
+                        }
+                    ],
+                    max_tokens=10,
+                    temperature=0
+                )
+                detected_language = detect_response.choices[0].message.content.strip()
+            except Exception as e:
+                print("Language detection failed, fallback to English: ", e)
+        
+        #Prompt pentru mesaj personalizat in limba detectata
+        prompt = (
+            f"Imagine you are Fallnik, a helpful student assistant AI. "
+            f"Write a short and friendly welcome message in {detected_language}. "
+            f"Introduce yourself, be warm, and briefly explain that you can help the user learn better, summarize lesson documents and generate quizzez for knowledge evaluation. "
+            f"Use a natural tone appropriate for students."
+        )
+
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role":"user", "content":prompt}],
+            max_tokens = 350,
+            temperature=0.6
+        )
+
+        welcome_text = response.choices[0].message.content.strip()
+        return jsonify({"message":welcome_text})
+    except Exception as e:
+        print("Welcome message generation failed: ", e)
+        return jsonify({
+            "message" : "Hello! I am Fallnik, your AI assistant. I can help you learn, i can summarize your lessons and help you evaluate yourself. Just give me your lesson material."
+        })
 
 
 
