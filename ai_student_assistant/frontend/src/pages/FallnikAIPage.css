@@ -10,7 +10,7 @@
 
 h2{
     margin-bottom: 20px;
-    color: #24146b;
+    color: #101011;
 }
 
 .chat-box{
@@ -20,6 +20,12 @@ h2{
     background: #f9f9f9;
     border-radius: 12px;
     margin-bottom: 20px;
+
+    background: rgba(255,255,255,0.3);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    border: 1px solid rgba(255,255,255,0.2);
 }
 
 .chat-box::-webkit-scrollbar,.summary-section::-webkit-scrollbar{
@@ -36,19 +42,22 @@ h2{
     margin-bottom: 10px;
     border-radius: 8px;
     max-width: 80%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
 .message.user{
-    background-color: #dbeafe;
+    background-color: #f0f0f0;
     align-self: flex-end;
     text-align: right;
     margin-left: auto;
+    color: #333;
 }
 
 .message.ai{
-    background-color: #ede9fe;
+    background-color: #e8e8e8;
     align-self: flex-start;
     margin-right: auto;
+    color: #222;
 }
 
 .input-area {
@@ -63,17 +72,17 @@ h2{
     border: 1px solid #ccc;
 }
 
-.input-area button{
-    padding: 10px 16px;
-    background: #24146b;
+.ai-page button{
+    background: #242425;
     color: white;
     border: none;
     border-radius: 8px;
     cursor: pointer;
+    gap: 10px;
 }
 
-.input-area button:hover{
-    background: #3b2e90;
+.ai-page button:hover{
+    background: #100a3b;
 }
 
 .typing-indicator{
@@ -99,10 +108,10 @@ h2{
     margin-top: 30px;
     padding: 15px;
     background: #f7f6fd;
-    border-left: 4px solid #8b5cf6;
+    border-left: 4px solid #242425;
     border-radius: 8px;
-    max-height: 300px;
-    overflow-y: auto;
+    max-height: none;
+    overflow-y: visible;
 }
 
 .summary-content{
@@ -121,17 +130,18 @@ h2{
 }
 
 .download-link a{
-    background: #4f46e5;
+    display: inline-flex;
+    align-items: center;
+    background: #170e2b;
     color: white;
     padding: 10px 14px;
     border-radius: 8px;
     text-decoration: none;
-    display: inline-block;
     transition: background 0.3s;
 }
 
 .download-link a:hover{
-    background: #3730a3;
+    background: #120f3a;
 }
 
 .quiz-item{
@@ -161,7 +171,66 @@ h2{
     border-radius: 6px;
 }
 
+.quiz-options{
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+}
+
+
 .error-message{
     color: red;
     margin-top: 10px;
+}
+
+.card-container{
+    display: flex;
+    flex-direction : column;
+    gap: 30px;
+    margin-top: 120px;
+}
+
+.card{
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+    padding: 20px;
+    transition: all 0.3s ease;
+}
+
+.card:hover{
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+}
+
+.quiz-loader{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+}
+
+.loader-bar{
+    width: 200px;
+    height: 10px;
+    background: #ddd;
+    border-radius: 5px;
+    overflow: hidden;
+    position: relative;
+}
+
+.loader-bar::before{
+    content: "";
+    position: absolute;
+    left: -50%;
+    width: 50px;
+    height: 100%;
+    background: #888;
+    animation: slide 1s linear infinite;
+}
+
+@keyframes slide{
+    0% {left: -50%; }
+    100%{left: 100% }
 }
