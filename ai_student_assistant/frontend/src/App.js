@@ -9,6 +9,7 @@ import RequestResetPage from './pages/RequestResetPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import PublicRoute from './components/PublicRoute';
 import FallnikAIPage from './pages/FallnikAIPage';
+import MusicPage from './pages/MusicPage';
 
 function App() {
   return (
@@ -44,6 +45,14 @@ function App() {
             </ProtectedRoute>
           }
           />
+        <Route 
+          path="/dashboard/music"
+          element={
+            <ProtectedRoute>
+              <MusicPage />
+            </ProtectedRoute>
+          }    
+        />
       </Routes>
     </div>
   );

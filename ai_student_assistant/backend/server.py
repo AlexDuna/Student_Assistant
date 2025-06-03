@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, redirect
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 import hashlib, secrets, os
@@ -16,6 +16,8 @@ from flask import session #pentru ca ai-ul sa retina contextul rezumatului pe ca
 from fpdf import FPDF
 import json
 from difflib import SequenceMatcher
+import base64
+import requests
 
 #Incarcare variabile din .env
 load_dotenv()
@@ -336,14 +338,20 @@ def ask_ai():
 
     messages.append({
         "role":"user",
-        "content": question
+        "content": (
+            "Please answer the following question in the **same language** used in the question. "
+            "Answer in a structured and easy-to-read format. "
+            "Use Markdown formatting: use **bold titles**, bullet points (•), numbered lists if needed, and leave **empty lines between sections** for better clarity. "
+            "Do **not write in a single paragraph**, and **always break long explanations into parts**. "
+            f"\n\nQuestion: {question}"        
+        )
     })
     
     try:
         response = client.chat.completions.create(
             model = "gpt-4-turbo",
             messages=messages,
-            max_tokens = 700,
+            max_tokens = 1000,
             temperature = 0.7
         )
 
@@ -752,6 +760,224 @@ def welcome_message():
 def reset_lesson_context():
     session.pop('lesson_context', None)
     return jsonify({'message' : 'Lesson context cleared'}), 200
+
+
+
+
+#Spotify api
+@app.route('/api/spotify/callback')
+def spotify_callback():
+    code = request.args.get('code')
+
+    if not code:
+        return jsonify({'error' : 'No code in callback'}), 400
+    
+    client_id = os.getenv("SPOTIFY_CLIENT_ID")
+    client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
+    redirect_uri = "https://www.fallnik.com/api/spotify/callback"
+
+    auth_header = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
+
+    token_url = "https://accounts.spotify.com/api/token"
+    payload = {
+        "grant_type" : "authorization_code",
+        "code" : code,
+        "redirect_uri" : redirect_uri
+    }
+    headers = {
+        "Authorization" : f"Basic {auth_header}",
+        "Content-Type" : "application/x-www-form-urlencoded"
+    }
+
+    r = requests.post(token_url, data=payload, headers=headers)
+    if r.status_code != 200:
+        return jsonify({'error' : 'Failed to get token'}), 500
+    
+    tokens = r.json()
+    session['spotify_access_token'] = tokens['access_token']
+    session['spotify_refresh_token'] = tokens['refresh_token']
+
+    return redirect("https://www.fallnik.com/dashboard/music?spotify=connected")
+
+
+
+#Spotify Logout
+@app.route('/api/spotify/logout', methods=['POST'])
+def spotify_logout():
+    session.pop('spotify_access_token', None)
+    session.pop('spotify_refresh_token', None)
+    return jsonify({'success': True})
+
+
+#Spotify Profile
+@app.route('/api/spotify/profile', methods=['GET'])
+def spotify_profile():
+    access_token = session.get('spotify_access_token')
+
+    if not access_token:
+        return jsonify({'error' : 'User not authenticated with Spotify'}), 401
+    
+    headers = {
+        "Authorization" : f"Bearer {access_token}"
+    }
+
+    r = requests.get("https://api.spotify.com/v1/me", headers=headers)
+
+    if r.status_code != 200:
+        return jsonify({'error' : 'Failed to fetch profile'}), 500
+    
+    return jsonify(r.json())
+
+
+
+#Melodia curenta
+@app.route('/api/spotify/currently-playing', methods=['GET'])
+def current_track():
+    access_token = session.get('spotify_access_token')
+
+    if not access_token:
+        return jsonify({'error' : 'User not authenticated to Spotify'}), 401
+    
+    headers ={
+        "Authorization" : f"Bearer {access_token}"
+    }
+
+    response = requests.get("https://api.spotify.com/v1/me/player/currently-playing", headers=headers)
+
+    if response.status_code == 204:
+        return jsonify({'message' : 'No track currently playing'}), 200
+    
+    if response.status_code != 200:
+        return jsonify({'error': 'Failed to fetch current track'}), 500 
+    
+    try:
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({'error' : 'Invalid JSON from Spotify'}), 500
+    
+
+
+
+#Spotify playlists
+@app.route('/api/spotify/playlists', methods=['GET'])
+def spotify_playlists():
+    access_token = session.get('spotify_access_token')
+    if not access_token:
+        return jsonify({'error' : 'User not authenticated to Spotify'}), 401
+    
+    headers = {
+        "Authorization" : f"Bearer {access_token}"
+    }
+
+    response = requests.get("https://api.spotify.com/v1/me/playlists", headers=headers)
+
+    if response.status_code != 200:
+        print("Error fetching playlists:", response.text)
+        return jsonify({'error' : 'Failed to fetch playlists'}), 500
+    
+    return jsonify(response.json())
+
+
+
+
+#Afisarea melodiilor din playlisturi in pagina music
+@app.route('/api/spotify/playlist/<playlist_id>/tracks', methods=['GET'])
+def get_playlist_tracks(playlist_id):
+    access_token = session.get('spotify_access_token')
+
+    if not access_token:
+        return jsonify({'error' : 'User not authenticated'}), 401
+    
+    headers ={
+        "Authorization" : f"Bearer {access_token}"
+    }
+
+    url = f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks"
+    response = requests.get(url, headers=headers)
+
+    if response.status_code != 200:
+        return jsonify({'error' : 'Failed to fetch tracks'}), response.status_code
+    
+    return jsonify(response.json())
+
+
+
+
+#Redare melodie direct din pagina music
+@app.route("/api/spotify/play-track", methods=["PUT"])
+def play_track():
+    access_token = session.get('spotify_access_token')
+
+    if not access_token:
+        return jsonify({'error' : 'Not authenticated to Spotify'}), 401
+    
+    data = request.get_json()
+    track_uri = data.get("uri")
+
+    if not track_uri:
+        return jsonify({'error' : 'No track URI provided'}), 400
+    
+    headers ={
+        "Authorization" : f"Bearer {access_token}",
+        "Content-Type" : "application/json"
+    }
+
+    payload = {
+        "uris" : [track_uri]
+    }
+
+    response = requests.put("https://api.spotify.com/v1/me/player/play", headers=headers, json=payload)
+
+    if response.status_code == 204:
+        return jsonify({'message' : 'Track playing'}), 200
+    else:
+        return jsonify({"error" : "Failed to start playback", "details" : response.json()}), 500
+    
+
+
+#Pentru Pauza la melodii
+@app.route("/api/spotify/pause", methods=["PUT"])
+def pause_track():
+    access_token = session.get('spotify_access_token')
+
+    if not access_token:
+        return jsonify({'error' : 'Not authenticated to Spotify'}), 401
+    
+    headers ={
+        "Authorization" : f"Bearer {access_token}"
+    }
+
+    response = requests.put("https://api.spotify.com/v1/me/player/pause", headers=headers)
+
+    if response.status_code == 204:
+        return jsonify({'message' : 'Playback paused'}), 200
+    else:
+        return jsonify({"error" : "Failed to pause playback"}), 500
+    
+
+
+#Pentru Optiune de next song la melodii
+@app.route("/api/spotify/next", methods=["POST"])
+def next_track():
+    access_token = session.get('spotify_access_token')
+
+    if not access_token:
+        return jsonify({'error' : 'Not authenticated to Spotify'}), 401
+    
+    headers ={
+        "Authorization" : f"Bearer {access_token}"
+    }
+
+    response = requests.put("https://api.spotify.com/v1/me/player/next", headers=headers)
+
+    if response.status_code == 204:
+        return jsonify({'message' : 'Skipped to next track'}), 200
+    else:
+        return jsonify({"error" : "Failed to skip track"}), 500
+    
+
+
+
 
 
 
