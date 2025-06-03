@@ -244,4 +244,59 @@
       left: 0;
     }
   }
+
+  .spotify-logout-button{
+    background-color: #1DB954;
+    color: black;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-right: 12px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap:6px;
+    transition: background 0.3s ease;
+}
+
+.spotify-logout-button:hover{
+    background-color: #1ed760;
+}
+
+.spotify-login-section{
+  height: 60vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  color: black;
+}
+
+.spotify-login-section h3{
+  font-size: 1.6rem;
+  margin-bottom: 20px;
+}
+
+.logout-wrapper{
+  display: flex;
+  justify-content: center;
+  margin-top: 40px;
+}
+
+.spotify-control-button{
+  background-color: #a1a1a1;
+  color: black;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-right: 12px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap:6px;
+  transition: background 0.3s ease;
+}
   

@@ -2,6 +2,7 @@ import React , { useState } from "react";
 import { FaCalendarAlt, FaCog, FaMusic, FaRobot, FaSignOutAlt, FaTasks, FaUser } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import "./Navbar.css"
+import SpotifyLoginButton from "./SpotifyLoginButton";
 
 const Navbar = ({username}) => {
     const [menuOpen, setMenuOpen] = useState(false);
