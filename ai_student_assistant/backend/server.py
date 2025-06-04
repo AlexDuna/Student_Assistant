@@ -869,13 +869,19 @@ def spotify_playlists():
         "Authorization" : f"Bearer {access_token}"
     }
 
-    response = requests.get("https://api.spotify.com/v1/me/playlists", headers=headers)
+    playlists = []
+    url = "https://api.spotify.com/v1/me/playlists"
 
-    if response.status_code != 200:
-        print("Error fetching playlists:", response.text)
-        return jsonify({'error' : 'Failed to fetch playlists'}), 500
+    while url:
+        res = requests.get(url, headers=headers)
+        if res.status_code != 200:
+            return jsonify({'error' : 'Failed to fetch playlists'}), 500
+        
+        data = res.json()
+        playlists.extend(data.get("items", []))
+        url = data.get("next")
     
-    return jsonify(response.json())
+    return jsonify({"items" : playlists})
 
 
 
@@ -949,7 +955,7 @@ def pause_track():
 
     response = requests.put("https://api.spotify.com/v1/me/player/pause", headers=headers)
 
-    if response.status_code == 204:
+    if 200 <= response.status_code < 300:
         return jsonify({'message' : 'Playback paused'}), 200
     else:
         return jsonify({"error" : "Failed to pause playback"}), 500
@@ -968,17 +974,150 @@ def next_track():
         "Authorization" : f"Bearer {access_token}"
     }
 
-    response = requests.put("https://api.spotify.com/v1/me/player/next", headers=headers)
+    response = requests.post("https://api.spotify.com/v1/me/player/next", headers=headers)
 
-    if response.status_code == 204:
+    if 200 <= response.status_code < 300:
         return jsonify({'message' : 'Skipped to next track'}), 200
     else:
         return jsonify({"error" : "Failed to skip track"}), 500
     
 
 
+#Pentru optiune de previous song la melodii
+@app.route("/api/spotify/previous", methods=["POST"])
+def previous_track():
+    access_token = session.get('spotify_access_token')
+
+    if not access_token:
+        return jsonify({'error' : 'Not authenticated to Spotify'}), 401
+    
+    headers ={
+        "Authorization" : f"Bearer {access_token}"
+    }
+
+    response = requests.post("https://api.spotify.com/v1/me/player/previous", headers=headers)
+
+    if 200 <= response.status_code < 300:
+        return jsonify({'message' : 'Skipped to previous track'}), 200
+    else:
+        return jsonify({"error" : "Failed to skip to previous track"}), 500
 
 
+
+
+#Status player
+@app.route('/api/spotify/player-status', methods=['GET'])
+def player_status():
+    access_token = session.get('spotify_access_token')
+
+    if not access_token:
+        return jsonify({'error' : 'Not authenticated to Spotify'}), 401
+    
+    headers ={
+        "Authorization" : f"Bearer {access_token}"
+    }
+
+    response = requests.get("https://api.spotify.com/v1/me/player", headers=headers)
+
+    if response.status_code != 200:
+        return jsonify({'error' : 'Failed to get player status'}), 500
+    
+    return jsonify(response.json())
+
+
+#Resume
+@app.route("/api/spotify/resume", methods=["PUT"])
+def resume_track():
+    access_token = session.get('spotify_access_token')
+
+    if not access_token:
+        return jsonify({'error' : 'Not authenticated to Spotify'}), 401
+    
+    headers ={
+        "Authorization" : f"Bearer {access_token}"
+    }
+
+    response = requests.put("https://api.spotify.com/v1/me/player/play", headers=headers)
+
+    if 200 <= response.status_code < 300:
+        return jsonify({'message' : 'Playback resumed'}), 200
+    else:
+        return jsonify({'error' : 'Failed to resume playback'}), 500
+
+
+
+
+#Liked Songs
+@app.route("/api/spotify/liked-tracks", methods=["GET"])
+def liked_tracks():
+    access_token = session.get('spotify_access_token')
+
+    if not access_token:
+        return jsonify({'error' : 'Not authenticated to Spotify'}), 401
+    
+    headers ={
+        "Authorization" : f"Bearer {access_token}"
+    }
+
+    url = "https://api.spotify.com/v1/me/tracks?limit=50"
+    response = requests.get(url, headers=headers)
+
+    if response.status_code != 200:
+        return jsonify({'error' : 'Failed to fetch liked tracks'}), 500
+    
+    return jsonify(response.json())
+
+
+
+
+#Recently played
+@app.route("/api/spotify/recent-tracks", methods=["GET"])
+def recent_tracks():
+    access_token = session.get('spotify_access_token')
+
+    if not access_token:
+        return jsonify({'error' : 'Not authenticated to Spotify'}), 401
+    
+    headers ={
+        "Authorization" : f"Bearer {access_token}"
+    }
+
+    url = "https://api.spotify.com/v1/me/player/recently-played?limit=30"
+    response = requests.get(url, headers=headers)
+
+    if response.status_code != 200:
+        return jsonify({'error' : 'Failed to fetch recent tracks'}), 500
+    
+    return jsonify(response.json())
+
+
+
+
+#Search Songs
+@app.route("/api/spotify/search", methods=["GET"])
+def search_spotify():
+    access_token = session.get('spotify_access_token')
+    query = request.args.get("q")
+
+    if not access_token:
+        return jsonify({'error' : 'Not authenticated to Spotify'}), 401
+    
+    headers ={
+        "Authorization" : f"Bearer {access_token}"
+    }
+
+    params = {
+        "q" : query,
+        "type" : "track",
+        "limit" : 20
+    }
+    
+    response = requests.get("https://api.spotify.com/v1/search", headers=headers, params=params)
+
+    if response.status_code != 200:
+        return jsonify({'error' : 'Failed to search results'}), 500
+    
+    return jsonify(response.json())
 
 
 # DataBase initialization (crearea automata a tabelului)

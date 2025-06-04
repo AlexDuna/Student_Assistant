@@ -11,7 +11,12 @@ const SpotifyLoginButton = () => {
             "user-read-email",
             "user-read-private",
             "user-modify-playback-state",
-            "user-read-playback-state"
+            "user-read-playback-state",
+            "user-library-read",
+            "user-read-currently-playing",
+            "user-read-recently-played",
+            "playlist-read-private",
+            "playlist-read-collaborative"
         ].join(" ");
 
         const authUrl = `https://accounts.spotify.com/authorize?response_type=code&client_id=${client_id}&scope=${encodeURIComponent(scope)}&redirect_uri=${encodeURIComponent(redirect_uri)}`;
