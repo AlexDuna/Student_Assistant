@@ -299,4 +299,13 @@
   gap:6px;
   transition: background 0.3s ease;
 }
-  
+
+
+.search-mode-box {
+  border: 2px dashed #1db954;
+  background-color: #f5fff5;
+  padding: 20px;
+  border-radius: 16px;
+  margin-bottom: 30px;
+  transition: all 0.3s ease;
+}
