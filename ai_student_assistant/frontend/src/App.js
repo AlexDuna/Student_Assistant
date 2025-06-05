@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import DashboardLayout from './components/DashboadLayout';
 import StartPage from './pages/StartPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -28,31 +29,23 @@ function App() {
           <RegisterPage/>
         </PublicRoute>
         }/>
-        <Route path="/dashboard" 
-        element = {
-          <PublicRoute>
-            <DashboardPage/>
-          </PublicRoute>
-        }/>
         <Route path = "/confirm/:token" element={<ConfirmPage/>}/>
         <Route path = "/request-reset" element={<RequestResetPage/>}/>
         <Route path = "/reset-password/:token" element={<ResetPasswordPage/>} />
-        <Route 
-          path="/dashboard/ai"
-          element={
-            <ProtectedRoute>
-              <FallnikAIPage/>
-            </ProtectedRoute>
-          }
-          />
-        <Route 
-          path="/dashboard/music"
-          element={
-            <ProtectedRoute>
-              <MusicPage />
-            </ProtectedRoute>
-          }    
-        />
+        
+        <Route
+          path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
+          <Route path="" element={<DashboardPage />} />
+          <Route path="ai" element={<FallnikAIPage />} />
+          <Route path="music" element={<MusicPage />} />
+      </Route>
+
       </Routes>
     </div>
   );
