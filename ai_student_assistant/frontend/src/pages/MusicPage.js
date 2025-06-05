@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useContext} from "react";
 import { useEffect, useRef } from "react";
 import "./DashboardPage.css";
 import Navbar from "../components/Navbar";
 import SpotifyLoginButton from "../components/SpotifyLoginButton";
+import { MusicPlayerContext } from "../utils/MusicPlayerContext";
 
 const MusicPage = () => {
     const [currentTrack, setCurrentTrack] = useState(null);
@@ -10,13 +11,21 @@ const MusicPage = () => {
     const [playlists, setPlaylists] = useState([]);
     const [error, setError] = useState(null);
     const [selectedPlaylist, setSelectedPlaylist] = useState(null);
-    const [playlistTracks, setPlaylistTracks] = useState([]);
     const [isPaused, setIsPaused] = useState(false);
     const trackSectionRef = useRef(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState([]);
     const [isSearchMode, setIsSearchMode] = useState(false);
-    const [currentTrackIndex, setCurrentTrackIndex] = useState(null);
+    const {
+        playTrack,
+        playlistTracks,
+        currentTrackIndex,
+        next,
+        previous,
+        setPlaylistTracks,
+      } = useContext(MusicPlayerContext);
+      
+
 
 
     const handleSpotifyLogout = async () => {
@@ -30,6 +39,9 @@ const MusicPage = () => {
 
     const openPlaylist = async (playlistId, isCustom = false, items=[]) => {
         setSelectedPlaylist(playlistId);
+        setIsSearchMode(false);
+        setSearchQuery("");
+        setSearchResults([]);
 
         if (isCustom && items.length > 0){
             setPlaylistTracks(items);
@@ -51,72 +63,10 @@ const MusicPage = () => {
         }
     }
 
-    const playTrack = async (uri, index = null) => {
-        const res = await fetch("https://www.fallnik.com/api/spotify/play-track",{
-            method: "PUT",
-            headers: {
-                "Content-Type" : "application/json"
-            },
-            credentials: "include",
-            body: JSON.stringify({uri})
-        });
-
-        const data = await res.json();
-        if (data.error) {
-            console.error("Play error: ", data.error);
-        } else {
-            console.log("Track started");
-            setIsSearchMode(false);
-            if (index !== null) {
-                setCurrentTrackIndex(index); 
-            }
-        }
-    }
-
-    const pausePlayback = async () => {
-        await fetch("https://www.fallnik.com/api/spotify/pause",{
-            method:"PUT",
-            credentials: "include"
-        });
-    };
-
-    const nextTrack = async () => {
-        if (
-            selectedPlaylist &&
-            playlistTracks.length > 0 &&
-            currentTrackIndex !== null &&
-            currentTrackIndex < playlistTracks.length - 1
-        ) {
-            const nextIndex = currentTrackIndex + 1;
-            const nextTrackUri = playlistTracks[nextIndex].track.uri;
-            await playTrack(nextTrackUri, nextIndex);
-        } else {
-            // fallback la API-ul nativ Spotify
-            await fetch("https://www.fallnik.com/api/spotify/next", {
-                method: "POST",
-                credentials: "include"
-            });
-        }
-    }
-
-    const handlePrevious = async () => {
-        if (
-            selectedPlaylist &&
-            playlistTracks.length > 0 &&
-            currentTrackIndex !== null &&
-            currentTrackIndex > 0
-        ) {
-            const prevIndex = currentTrackIndex - 1;
-            const prevTrackUri = playlistTracks[prevIndex].track.uri;
-            await playTrack(prevTrackUri, prevIndex);
-        } else {
-            // fallback la API-ul nativ Spotify
-            await fetch("https://www.fallnik.com/api/spotify/previous", {
-                method: "POST",
-                credentials: "include"
-            });
-        }
-    }
+    const handleTrackPlay = (uri, index) => {
+        playTrack(uri, index, playlistTracks); 
+        setIsSearchMode(false); 
+      };
 
     const togglePlayback = async () => {
         const endpoint = isPaused ? "resume" : "pause";
@@ -252,8 +202,7 @@ const MusicPage = () => {
             const trimmed = searchQuery.trim();
             if(!trimmed){
                 setIsSearchMode(false);
-                setSelectedPlaylist(null);       
-                setPlaylistTracks([]);            
+                setSelectedPlaylist(null);                 
                 return;
             }
             if(!searchQuery.trim()){
@@ -269,7 +218,8 @@ const MusicPage = () => {
             .then(data => {
                 if(data.tracks && data.tracks.items){
                     setSearchResults(data.tracks.items);
-                    setPlaylistTracks(data.tracks.items.map(track => ({track})));
+                    setPlaylistTracks(data.tracks.items.map(track => ({ track })));
+
                     setSelectedPlaylist("__search__");
                     setIsSearchMode(true);
                 }
@@ -312,9 +262,9 @@ const MusicPage = () => {
                         <a href={currentTrack.link} target="_blank" rel="noopener noreferrer">Open in Spotify</a>
 
                         <div style={{marginTop: "15px", display: "flex", gap: "10px", justifyContent: "center"}}>
-                            <button onClick={handlePrevious} className="spotify-control-button">⏮</button>
+                            <button onClick={previous} className="spotify-control-button">⏮</button>
                             <button onClick={togglePlayback} className="spotify-control-button">{isPaused ? "▶" : "⏸"}</button>
-                            <button onClick={nextTrack} className="spotify-control-button">⏭</button>
+                            <button onClick={next} className="spotify-control-button">⏭</button>
                         </div>
                     </div>
                 )}
@@ -407,7 +357,7 @@ const MusicPage = () => {
                                                 borderRadius: "8px",
                                                 cursor: "pointer"
                                             }}
-                                            onClick={() => playTrack(track.uri, index)}
+                                            onClick={() => handleTrackPlay(track.uri, index)}
                                         >
                                             ▶Play
                                         </button>
@@ -441,7 +391,7 @@ const MusicPage = () => {
                                             borderRadius: "8px",
                                             cursor: "pointer"
                                         }}
-                                        onClick={() => playTrack(track.uri, index)}
+                                        onClick={() => handleTrackPlay(track.uri, index)}
                                     >
                                         ▶Play
                                     </button>

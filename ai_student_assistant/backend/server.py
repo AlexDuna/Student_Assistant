@@ -313,6 +313,7 @@ def logout():
 #Endpoint pagina ai
 @app.route('/api/ask-ai', methods=['POST'])
 def ask_ai():
+    print("Session keys on ask-ai:", list(session.keys()))
     data=request.get_json()
     question= data.get("question")
 
@@ -369,6 +370,7 @@ def ask_ai():
 #Upload fisiere
 @app.route('/api/upload-material', methods=['POST'])
 def upload_material():
+    print("Session keys on upload:", list(session.keys()))
     file= request.files.get('file')
 
     if not file:
@@ -1118,6 +1120,50 @@ def search_spotify():
         return jsonify({'error' : 'Failed to search results'}), 500
     
     return jsonify(response.json())
+
+
+
+
+
+@app.route("/api/spotify/transfer-playback", methods=["PUT"])
+def transfer_playback():
+    access_token = session.get('spotify_access_token')
+    data = request.get_json()
+    device_id = data.get("device_id")
+
+    if not access_token or not device_id:
+        return jsonify({'error' : 'Missing access or device_id'}), 400
+    
+    headers ={
+        "Authorization" : f"Bearer {access_token}",
+        "Content-Type" : "application/json"
+    }
+
+    payload = {
+        "device_ids" : [device_id],
+        "play" : True
+    }
+
+    r = requests.put("https://api.spotify.com/v1/me/player", headers=headers, json = payload)
+
+    if r.status_code == 204:
+        return jsonify({"message" : "Playback transferred"}), 200
+    else:
+        return jsonify({"error" : "Transfer failed"}), 500
+    
+
+
+
+
+#transmitere token catre frontend
+@app.route('/api/spotify/token', methods=['GET'])
+def get_spotify_token():
+    access_token = session.get('spotify_access_token')
+    if not access_token:
+        return jsonify({'error' : 'Not authenticated to Spotify'}), 401
+    
+    return jsonify({'token' : access_token})
+
 
 
 # DataBase initialization (crearea automata a tabelului)
