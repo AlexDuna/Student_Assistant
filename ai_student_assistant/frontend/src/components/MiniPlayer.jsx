@@ -39,6 +39,14 @@ const MiniPlayer = () => {
                     if(state){
                         const progress = (state.position /state.duration) * 100;
                         setProgress(progress);
+
+                        if (
+                            !state.paused &&
+                            state.duration > 0 &&
+                            state.position >= state.duration - 1000
+                        ) {
+                            next(); // play la urmatoarea melodie dupa ce melodia curenta se termina
+                        }
                     }
                 });
             }

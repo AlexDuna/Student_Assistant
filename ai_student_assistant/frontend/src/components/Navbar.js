@@ -10,6 +10,11 @@ const Navbar = ({username}) => {
 
     const handleLogout = async () => {
         try{
+            await fetch("https://www.fallnik.com/api/spotify/pause", {
+                method: "PUT",
+                credentials: "include",
+            });
+
             await fetch("https://www.fallnik.com/api/logout",{
                 method: "POST",
                 credentials: "include",

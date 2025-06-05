@@ -18,6 +18,7 @@ import json
 from difflib import SequenceMatcher
 import base64
 import requests
+from functools import wraps
 
 #Incarcare variabile din .env
 load_dotenv()
@@ -60,6 +61,31 @@ class User(db.Model):
     reset_token = db.Column(db.String(64), unique = True)
     reset_token_expiry = db.Column(db.DateTime)
 
+
+
+class UserData(db.Model):
+    id = db.Column(db.Integer, primary_key = True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), unique=True, nullable=False
+                        )
+    messages = db.Column(db.Text)
+    summary = db.Column(db.Text)
+    file_name = db.Column(db.String)
+    quiz_data = db.Column(db.Text)
+    quiz_answers = db.Column(db.Text)
+    quiz_results = db.Column(db.Text)
+    download_url = db.Column(db.String)
+
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not request.cookies.get("session_id"):
+            return jsonify({"error":"Unauthorized"}),401
+        return f(*args, **kwargs)
+    return decorated_function
 
 
 # Hashing
@@ -180,6 +206,8 @@ def login():
     #comparam hash-ul generat cu cel din baza de date
     if hashed_input != user.password_hash:
         return jsonify({'error' : 'Invalid credentials'}), 401
+    
+    session["user_id"] = user.id
     
     #LOGIN REUSIT - se seteaza cookie cu sesiunea
     response = make_response(jsonify({'message': 'Login successful'}))
@@ -309,6 +337,53 @@ def logout():
     response.set_cookie('session_id', '' , expires = 0)
     return response
     
+
+
+
+
+#Salvare date (chat, summaries, etc)
+@app.route("/api/user-data", methods=["GET"])
+@login_required
+def get_user_data():
+    user_id = session.get("user_id")
+    data = UserData.query.filter_by(user_id = user_id).first()
+
+    if not data:
+        return jsonify({})
+    
+    return jsonify({
+        "messages" : json.loads(data.messages) if data.messages else [],
+        "summary" : data.summary,
+        "file_name": data.file_name,
+        "quiz_data" : json.loads(data.quiz_data) if data.quiz_data else [],
+        "quiz_answers": json.loads(data.quiz_answers) if data.quiz_answers else [],
+        "quiz_results": json.loads(data.quiz_results) if data.quiz_results else [],
+        "download_url" : data.download_url,
+    })
+
+@app.route("/api/user-data", methods=["POST"])
+@login_required
+def save_user_data():
+    user_id = session.get("user_id")
+    payload = request.json
+
+    data = UserData.query.filter_by(user_id = user_id).first()
+
+    if not data:
+        data = UserData(user_id = user_id)
+
+    data.messages = json.dumps(payload.get("messages", []))
+    data.summary = payload.get("summary", "")
+    data.file_name = payload.get("file_name", "")
+    data.quiz_data = json.dumps(payload.get("quiz_data", []))
+    data.quiz_answers = json.dumps(payload.get("quiz_answers", []))
+    data.quiz_results = json.dumps(payload.get("quiz_results", {}))
+    data.download_url = payload.get("download_url", "")
+
+    db.session.add(data)
+    db.session.commit()
+
+    return jsonify({"success": True})
 
 #Endpoint pagina ai
 @app.route('/api/ask-ai', methods=['POST'])

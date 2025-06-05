@@ -5,6 +5,10 @@ import UploadMaterial from "../components/UploadMaterial";
 import SummarySection from "../components/SummarySection";
 import QuizSection from "../components/QuizSection";
 import Navbar from "../components/Navbar";
+import {
+    loadPersistentStateFromServer,
+    savePersistentStateToServer
+} from "../utils/FallnikAIPersistance";
 
 const FallnikAIPage = () => {
     const [messages, setMessages] = useState([]); //Istoric Conversatie
@@ -30,6 +34,61 @@ const FallnikAIPage = () => {
 
     const quizRef = useRef(null);
 
+    const[fileName, setFileName] = useState("");
+    const [restored, setRestored] = useState(false);
+
+    useEffect(() => {
+        async function restore(){
+            const serverState = await loadPersistentStateFromServer();
+
+            if(serverState){
+                    if(serverState.messages) setMessages(serverState.messages);
+                    if(serverState.summary) {setSummary(serverState.summary); setHasSummary(true);}
+                    if(serverState.fileName) setFileName(serverState.fileName);
+                    if(serverState.quizData) {
+                        setQuizData(serverState.quizData);
+                        setQuizAnswers(serverState.quizAnswers || []);
+                        setQuizResults(serverState.quizResults);
+                        setQuizStarted(serverState.quizStarted);
+                        setQuizType(serverState.quizType);
+                    }
+                    if(serverState.quizAnswers) setQuizAnswers(serverState.quizAnswers);
+                    if(serverState.quizResults) setQuizResults(serverState.quizResults);
+                    if(serverState.quizStarted) setQuizStarted(serverState.quizStarted);
+                    if(serverState.downloadUrl) setDownloadUrl(serverState.downloadUrl);
+            }
+
+        setRestored(true);
+    }
+    restore();
+    }, [])
+
+    useEffect(() => {
+        if(!restored)return;
+        const state ={ 
+            messages,
+            summary,
+            fileName:fileName,
+            quizData:quizData,
+            quizAnswers:quizAnswers,
+            quizResults:quizResults,
+            quizStarted:quizStarted,
+            downloadUrl:downloadUrl,
+            quizType: quizType,
+        };
+        savePersistentStateToServer(state);
+    }, [
+        messages,
+        summary,
+        fileName,
+        quizData,
+        quizAnswers,
+        quizResults,
+        quizStarted,
+        downloadUrl,
+        quizType,
+    ]);
+
 
     useEffect(() => {
         const fetchWelcomeMessage = async() => {
@@ -48,14 +107,14 @@ const FallnikAIPage = () => {
             }
         };
 
-        if(messages.length === 0){
+        if(restored && messages.length === 0){
             fetchWelcomeMessage();
         }
 
         if(bottomRef.current && (hasSummary || quizData.length > 0)){
             bottomRef.current.scrollIntoView({behavior: "smooth"});
         }
-    }, [messages]);
+    }, [messages, restored]);
 
     const handleSendMessage = async () =>{
         if(!input.trim()) return;
@@ -94,6 +153,7 @@ const FallnikAIPage = () => {
     const handleFileChange = (e) => {
         setFile(e.target.files[0]);
         setSummary("");
+        setFileName(e.target.files[0]?.name || "");
         setUploadError("");
     };
 
