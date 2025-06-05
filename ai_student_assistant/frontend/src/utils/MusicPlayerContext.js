@@ -79,6 +79,60 @@ export const MusicPlayerProvider = ({ children }) => {
         loadPlayer();
     }, []);
 
+
+
+    const next = async () => {
+        if (!playlistTracks.length || currentTrackIndex === null) return;
+      
+        if (isRepeat) {
+          // Redă din nou aceeași piesă
+          const uri = playlistTracks[currentTrackIndex].track.uri;
+          await playTrack(uri, currentTrackIndex, playlistTracks);
+          return;
+        }
+      
+        let nextIndex = null;
+      
+        if (isShuffle) {
+          do {
+            nextIndex = Math.floor(Math.random() * playlistTracks.length);
+          } while (nextIndex === currentTrackIndex && playlistTracks.length > 1);
+        } else if (currentTrackIndex < playlistTracks.length - 1) {
+          nextIndex = currentTrackIndex + 1;
+        }
+      
+        if (nextIndex !== null) {
+          const uri = playlistTracks[nextIndex].track.uri;
+          await playTrack(uri, nextIndex, playlistTracks);
+        }
+      };
+      
+      
+      
+
+
+    // Detecteaza automat finalul piesei si da "next"
+    useEffect(() => {
+        const interval = setInterval(async () => {
+        const player = playerRef.current;
+        if (!player || !isReady || !track || isPaused) return;
+    
+        const state = await player.getCurrentState();
+        if (state && state.duration > 0) {
+            const timeLeft = state.duration - state.position;
+    
+            // daca mai sunt sub 1000ms si playerul nu e in pauza, trece automat la urmatoarea
+            if (timeLeft < 1000 && !state.paused) {
+            next();
+            }
+        }
+        }, 1000);
+    
+        return () => clearInterval(interval);
+    }, [isReady, isPaused, track, next]);
+
+
+
     const transferPlayback = async (device_id, token) => {
         await fetch("https://api.spotify.com/v1/me/player",{
             method: "PUT",
@@ -122,33 +176,6 @@ export const MusicPlayerProvider = ({ children }) => {
       
 
 
-      const next = async () => {
-        if (!playlistTracks.length || currentTrackIndex === null) return;
-      
-        if (isRepeat) {
-          // Redă din nou aceeași piesă
-          const uri = playlistTracks[currentTrackIndex].track.uri;
-          await playTrack(uri, currentTrackIndex, playlistTracks);
-          return;
-        }
-      
-        let nextIndex = null;
-      
-        if (isShuffle) {
-          do {
-            nextIndex = Math.floor(Math.random() * playlistTracks.length);
-          } while (nextIndex === currentTrackIndex && playlistTracks.length > 1);
-        } else if (currentTrackIndex < playlistTracks.length - 1) {
-          nextIndex = currentTrackIndex + 1;
-        }
-      
-        if (nextIndex !== null) {
-          const uri = playlistTracks[nextIndex].track.uri;
-          await playTrack(uri, nextIndex, playlistTracks);
-        }
-      };
-      
-      
       
 
 
