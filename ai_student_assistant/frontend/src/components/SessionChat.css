@@ -1,0 +1,201 @@
+/* Container principal */
+.session-room {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    padding: 1rem;
+    box-sizing: border-box;
+    background: white;
+    color: rgb(139, 136, 136);
+  }
+  
+  /* Header */
+  .session-header {
+    flex-shrink: 0;
+    margin-bottom: 1rem;
+  }
+  
+  .session-header h2, .session-header p {
+    margin: 0;
+    color: rgb(102, 101, 101);
+  }
+  
+  /* Corpul sesiunii cu cele 3 sectiuni */
+  .session-body {
+    flex: 1;
+    display: flex;
+    gap: 1rem;
+    overflow: hidden;
+  }
+  
+  /* Video area */
+  .session-section.video-area {
+    flex: 1;
+    background: #dcdcdc;
+    border-radius: 8px;
+    padding: 1rem;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  /* Upload area */
+  .session-section.upload-area {
+    flex: 2;
+    display: flex;
+    flex-direction: column;
+    background: #f8f8f8;
+    border-radius: 8px;
+    padding: 1rem;
+    overflow-y: auto;
+    color: rgb(50, 50, 50);
+  }
+  
+  /* Chat area */
+  .session-section.chat-area {
+    flex: 1;
+    max-height: 600px;
+    min-height: 600px;
+    background: #f8f8f8;
+    border-radius: 8px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    color: rgb(50, 50, 50);
+  }
+  
+  /* Chat container */
+  .session-chat-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    color: rgb(50, 50, 50);
+    min-height: 300px;
+  }
+  
+  /* Mesaje chat */
+  .session-chat-messages {
+    flex-grow: 1;
+    overflow-y: auto;
+    margin-bottom: 1rem;
+  }
+  
+  /* Mesaj individual */
+  .session-chat-message {
+    display: flex;
+    margin-bottom: 0.75rem;
+    align-items: flex-start;
+    min-height: 50px;
+    width: 100%;
+  }
+  
+  .session-chat-message.own {
+    justify-content: flex-end;
+    flex-direction: row;
+  }
+  
+  .session-chat-message.other {
+    justify-content: flex-start;
+    flex-direction: row;
+  }
+  
+  /* Avatar */
+  .session-chat-message img {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+  
+  .session-chat-message.own img {
+    margin-left: 0.5rem;
+    margin-right: 0;
+  }
+  
+  .session-chat-message.other img {
+    margin-right: 0.5rem;
+    margin-left: 0;
+  }
+  
+  /* Continut mesaj */
+  .session-chat-message-content {
+    max-width: 85%;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .session-chat-message-content strong {
+    font-weight: bold;
+    display: block;
+    color: #3f3f3f;
+  }
+  
+  .session-chat-message-content time {
+    font-size: 0.75rem;
+    color: #888;
+    margin-bottom: 0.25rem;
+    display: block;
+  }
+  
+  .session-chat-message-content > div {
+    padding: 0.5rem;
+    border-radius: 8px;
+    margin-top: 0.25rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  
+  .session-chat-message.own .session-chat-message-content > div {
+    background: #3366ff;
+    color: white;
+    border-top-right-radius: 0;
+    align-self: flex-end;
+  }
+  
+  .session-chat-message.other .session-chat-message-content > div {
+    background: #e0e0e0;
+    color: black;
+    border-top-left-radius: 0;
+    align-self: flex-start;
+  }
+  
+  /* Zona input chat */
+  .session-chat-input-area {
+    display: flex;
+    gap: 0.5rem;
+  }
+  
+  .session-chat-input-area input {
+    flex: 1;
+    padding: 0.5rem;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+  }
+  
+  .session-chat-input-area button {
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    background-color: #3366ff;
+    color: white;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .session-chat-input-area button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+  }
+  
+  .session-chat-input-area button svg {
+    transition: transform 0.2s ease;
+  }
+  
+  .session-chat-input-area button:hover svg {
+    transform: scale(1.1);
+  }
+  

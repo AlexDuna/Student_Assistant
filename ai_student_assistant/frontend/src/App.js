@@ -13,6 +13,7 @@ import FallnikAIPage from './pages/FallnikAIPage';
 import MusicPage from './pages/MusicPage';
 import AccountTab from './components/AccountTab';
 import SettingsTab from './components/SettingsTab';
+import SessionsPage from './pages/SessionPage';
 
 function App() {
   return (
@@ -48,6 +49,7 @@ function App() {
           <Route path="music" element={<MusicPage />} />
           <Route path="profile" element={<AccountTab />} />
           <Route path="settings" element={<SettingsTab />} />
+          <Route path="sessions" element={<SessionsPage />} />
       </Route>
 
       </Routes>

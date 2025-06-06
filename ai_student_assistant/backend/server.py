@@ -19,6 +19,7 @@ from difflib import SequenceMatcher
 import base64
 import requests
 from functools import wraps
+from flask_socketio import SocketIO, join_room, leave_room, emit
 
 #Incarcare variabile din .env
 load_dotenv()
@@ -28,6 +29,7 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # Flask app initializaton
 app = Flask(__name__, static_url_path='/static', static_folder='static')
+socketio = SocketIO(app, cors_allowed_origins="https://www.fallnik.com", async_mode='eventlet')
 CORS(app, supports_credentials=True, origins=["https://www.fallnik.com"])               #Accepta cereri de pe alte domenii (adica frontend)
 
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024 #50MB
@@ -78,6 +80,16 @@ class UserData(db.Model):
 
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
+
+
+class SessionMessage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    session_code = db.Column(db.String(10), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    text = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    user = db.relationship("User", backref="session_messages")
 
 
 def login_required(f):
@@ -1309,6 +1321,180 @@ def delete_account():
     return response
 
 
+
+
+
+#Partea de Sessions
+#Upload material per sesiune
+@app.route("/api/sessions/<code>/material", methods=["POST"])
+@login_required
+def upload_session_material(code):
+    if "file" not in request.files:
+        return jsonify({"error" : "No file provided"}), 400
+    
+    file = request.files["file"]
+    if file.filename == "":
+        return jsonify({"error" : "Empty filename"}), 400
+    
+    allowed_exts = {"pdf", "docx", "txt"}
+    ext = file.filename.rsplit(".", 1)[-1].lower()
+
+    if ext not in allowed_exts:
+        return jsonify({"error" : "Unsupported file type"}), 400
+    
+    filename = secure_filename(file.filename)
+    save_dir = f"/var/www/fallnik.com/html/static/session-files/{code}"
+    os.makedirs(save_dir, exist_ok=True)
+
+    file_path = os.path.join(save_dir, filename)
+    file.save(file_path)
+
+    file_url = f"https://www.fallnik.com/static/session-files/{code}/{filename}"
+    return jsonify({"file_url": file_url})
+
+
+@app.route("/api/sessions/<code>/material", methods=["GET"])
+@login_required
+def get_session_material(code):
+    dir_path = f"/var/www/fallnik.com/html/static/session-files/{code}"
+
+    if not os.path.exists(dir_path):
+        return jsonify({"file_url": None}),200
+    
+    files = os.listdir(dir_path)
+    if not files:
+        return jsonify({"file_url": None}), 200
+    
+    filename = files[0]
+    file_url = f"https://www.fallnik.com/static/session-files/{code}/{filename}"
+
+    return jsonify({"file_url": file_url})
+
+
+
+@app.route("/api/sessions/<code>/chat", methods=["POST"])
+@login_required
+def post_chat_message(code):
+    data = request.get_json()
+    text = data.get("text", "").strip()
+    user_id = session.get("user_id")
+
+    if not user_id or not text:
+        return jsonify({"error" : "Invalid input"}), 400
+    
+    msg = SessionMessage(
+            session_code=code,
+            user_id=user_id,
+            text=text
+        )
+    db.session.add(msg)
+    db.session.commit()
+
+    return jsonify({"success": True})
+
+
+@app.route("/api/sessions/<code>/chat", methods=["GET"])
+@login_required
+def get_chat_messages(code):
+    cleanup_expired_sessions()
+    messages = (
+        SessionMessage.query
+        .filter_by(session_code=code)
+        .order_by(SessionMessage.timestamp.asc())
+        .limit(100)
+        .all()
+    )
+
+    result = []
+    for msg in messages:
+        result.append({
+            "user": msg.user.username,
+            "avatar_url": msg.user.avatar_url or "/static/avatars/default-avatar.png",
+            "text": msg.text,
+            "timestamp": msg.timestamp.isoformat()
+        })
+
+    return jsonify({"messages": result})
+
+
+
+
+#pentru afisare mesaj cand un utilizator da join la o sesiune
+@app.route("/api/sessions/<code>/join", methods=["POST"])
+@login_required
+def join_session(code):
+    user_id = session.get("user_id")
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error" : "User not found"}), 404
+    
+    join_text = f"{user.username} joined this session."
+    join_msg = SessionMessage(session_code=code, user_id=user_id, text=join_text)
+    db.session.add(join_msg)
+    db.session.commit()
+
+    return jsonify({"message" : "Join message posted"})
+
+
+#functie de stergere a sesiunilor vechi din database
+def cleanup_expired_sessions(hours=6):
+    expiration_threshold = datetime.now(timezone.utc) - timedelta(hours=hours)
+    expired_messages = SessionMessage.query.filter(SessionMessage.timestamp < expiration_threshold).all()
+    for msg in expired_messages:
+        db.session.delete(msg)
+
+    db.session.commit()
+
+
+connected_users = {}
+
+@socketio.on('connect')
+def on_connect():
+    print(f"Client connected: {request.sid}")
+
+@socketio.on('disconnect')
+def on_disconnect():
+    sid = request.sid
+    #sterge userId care are acest sid
+
+    for user, socket_id in list(connected_users.items()):
+        if socket_id == sid:
+            del connected_users[user]
+            print(f"User {user} disconnected")
+            break
+
+
+
+#Partea de audio + video
+@socketio.on('join-session')
+def handle_join(data):
+    session_code = data.get('sessionCode')
+    user_id = data.get('userId')
+    if not session_code or not user_id:
+        return
+    
+    connected_users[user_id] = request.sid
+    
+    join_room(session_code)
+    #anuntam ceilalti useri ca un user nou a intrat
+    emit('user-joined', {'userId': user_id}, room=session_code, include_self=False)
+
+
+@socketio.on('signal')
+def handle_signal(data):
+    session_code = data.get('sessionCode')
+    target_id = data.get('targetId')
+    signal_data = data.get('signal')
+    from_user = data.get('userId')
+    if not session_code or not target_id or not signal_data or not from_user:
+        return
+    
+    target_sid = connected_users.get(target_id)
+    #trimitere semnal doar catre target
+    if target_sid:
+        emit('signal', {'from':from_user, 'signal':signal_data}, room=target_sid)
+
+
 # DataBase initialization (crearea automata a tabelului)
 def create_tables():
     with app.app_context():
@@ -1326,4 +1512,4 @@ def add_cors_headers(response):
 # Pornim serverul
 if __name__ == "__main__":
     create_tables()
-    app.run(debug=False, host="127.0.0.1", port=5000)
+    socketio.run(debug=False, host="127.0.0.1", port=5000)
