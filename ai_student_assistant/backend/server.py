@@ -20,6 +20,7 @@ import base64
 import requests
 from functools import wraps
 from flask_socketio import SocketIO, join_room, leave_room, emit
+import random, string
 
 #Incarcare variabile din .env
 load_dotenv()
@@ -92,10 +93,15 @@ class SessionMessage(db.Model):
     user = db.relationship("User", backref="session_messages")
 
 
+class Session(db.Model):
+    code = db.Column(db.String(6), primary_key=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if not request.cookies.get("session_id"):
+        if not session.get("user_id"):
             return jsonify({"error":"Unauthorized"}),401
         return f(*args, **kwargs)
     return decorated_function
@@ -377,26 +383,44 @@ def get_user_data():
 @app.route("/api/user-data", methods=["POST"])
 @login_required
 def save_user_data():
+    try:
+        user_id = session.get("user_id")
+        payload = request.json
+
+        data = UserData.query.filter_by(user_id = user_id).first()
+
+        print("Saving user data for user_id:", user_id)
+        print("Payload keys:", payload.keys() if payload else "No payload")
+
+        if not data:
+            data = UserData(user_id = user_id)
+
+        data.messages = json.dumps(payload.get("messages", []))
+        data.summary = payload.get("summary", "")
+        data.file_name = payload.get("file_name", "")
+        data.quiz_data = json.dumps(payload.get("quiz_data", []))
+        data.quiz_answers = json.dumps(payload.get("quiz_answers", []))
+        data.quiz_results = json.dumps(payload.get("quiz_results", {}))
+        data.download_url = payload.get("download_url", "")
+
+        db.session.add(data)
+        db.session.commit()
+
+        return jsonify({"success": True})
+    
+    except Exception as e:
+        print("Error saving user data:", e)
+        return jsonify({"error": str(e)}), 500
+    
+
+@app.route('/api/user-id', methods=['GET'])
+@login_required
+def get_user_id():
     user_id = session.get("user_id")
-    payload = request.json
+    if user_id is None:
+        return jsonify({'error' : 'Unauthorized'}), 401
+    return jsonify({'user_id' : user_id})
 
-    data = UserData.query.filter_by(user_id = user_id).first()
-
-    if not data:
-        data = UserData(user_id = user_id)
-
-    data.messages = json.dumps(payload.get("messages", []))
-    data.summary = payload.get("summary", "")
-    data.file_name = payload.get("file_name", "")
-    data.quiz_data = json.dumps(payload.get("quiz_data", []))
-    data.quiz_answers = json.dumps(payload.get("quiz_answers", []))
-    data.quiz_results = json.dumps(payload.get("quiz_results", {}))
-    data.download_url = payload.get("download_url", "")
-
-    db.session.add(data)
-    db.session.commit()
-
-    return jsonify({"success": True})
 
 #Endpoint pagina ai
 @app.route('/api/ask-ai', methods=['POST'])
@@ -1390,13 +1414,20 @@ def post_chat_message(code):
     db.session.add(msg)
     db.session.commit()
 
+    user = User.query.get(user_id)
+    socketio.emit('new-chat-message',{
+        'user' : user.username,
+        'avatar_url' : user.avatar_url or "/static/avatars/default-avatar.png",
+        'text' : text,
+        'timestamp' : msg.timestamp.isoformat()
+    }, room=code)
+
     return jsonify({"success": True})
 
 
 @app.route("/api/sessions/<code>/chat", methods=["GET"])
 @login_required
 def get_chat_messages(code):
-    cleanup_expired_sessions()
     messages = (
         SessionMessage.query
         .filter_by(session_code=code)
@@ -1423,6 +1454,12 @@ def get_chat_messages(code):
 @app.route("/api/sessions/<code>/join", methods=["POST"])
 @login_required
 def join_session(code):
+    cleanup_expired_sessions()
+    session_obj = Session.query.filter_by(code=code).first()
+    if not session_obj:
+        return jsonify({'error':"Session does not exist or expired"}), 404
+    
+
     user_id = session.get("user_id")
     user = User.query.get(user_id)
     if not user:
@@ -1433,17 +1470,58 @@ def join_session(code):
     db.session.add(join_msg)
     db.session.commit()
 
+    socketio.emit('new-chat-message', {
+        'user': 'System',
+        'avatar_url': '/static/avatars/default-avatar.png', 
+        'text': join_text,
+        'timestamp': join_msg.timestamp.isoformat()
+    }, room=code)
+
     return jsonify({"message" : "Join message posted"})
 
 
 #functie de stergere a sesiunilor vechi din database
 def cleanup_expired_sessions(hours=6):
     expiration_threshold = datetime.now(timezone.utc) - timedelta(hours=hours)
-    expired_messages = SessionMessage.query.filter(SessionMessage.timestamp < expiration_threshold).all()
-    for msg in expired_messages:
-        db.session.delete(msg)
+    expired_sessions = Session.query.filter(Session.created_at < expiration_threshold).all()
+    for session_obj in expired_sessions:
+        db.session.delete(session_obj)
 
     db.session.commit()
+
+
+#endpoint pentru crearea unei sesiuni noi
+@app.route('/api/sessions/create', methods=['POST'])
+@login_required
+def create_session():
+    def generate_code(length=6):
+        return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
+    
+    cleanup_expired_sessions()
+
+    while True:
+        code= generate_code()
+        exists = Session.query.filter_by(code=code).first()
+        if not exists:
+            break
+
+    new_session = Session(code=code)
+    db.session.add(new_session)
+    db.session.commit()
+    print(f"Session created: {code}")
+
+    return jsonify({'code':code}), 201
+
+
+#verificarea existentei unei sesiuni
+@app.route('/api/sessions/<code>/exists', methods=['GET'])
+def session_exists(code):
+    cleanup_expired_sessions()
+    code = code.upper()
+    session_obj = Session.query.filter_by(code=code).first() 
+    print(f"Checking existence for session code: {code} - Exists: {session_obj is not None}")
+    exists = session_obj is not None
+    return jsonify({'exists':exists}),200
 
 
 connected_users = {}
@@ -1470,6 +1548,8 @@ def on_disconnect():
 def handle_join(data):
     session_code = data.get('sessionCode')
     user_id = data.get('userId')
+
+    print(f"Socket join-session: user {user_id} joining {session_code}")
     if not session_code or not user_id:
         return
     
@@ -1478,6 +1558,37 @@ def handle_join(data):
     join_room(session_code)
     #anuntam ceilalti useri ca un user nou a intrat
     emit('user-joined', {'userId': user_id}, room=session_code, include_self=False)
+
+@socketio.on('leave-session')
+def handle_leave(data):
+    session_code = data.get('sessionCode')
+    user_id = data.get('userId')
+    if not session_code or not user_id:
+        return
+
+    user = User.query.get(user_id)
+    if not user:
+        return
+
+    # Emit mesaj în chat că userul a părăsit sesiunea
+    leave_text = f"{user.username} left this session."
+    leave_msg = SessionMessage(session_code=session_code, user_id=user_id, text=leave_text)
+    db.session.add(leave_msg)
+    db.session.commit()
+
+    socketio.emit('new-chat-message', {
+        'user': 'System',
+        'avatar_url': '/static/avatars/default-avatar.png',
+        'text': leave_text,
+        'timestamp': leave_msg.timestamp.isoformat()
+    }, room=session_code)
+
+    # Notifică restul participanților că userul a plecat
+    emit('user-left', {'userId': user_id}, room=session_code)
+
+    # Șterge utilizatorul din connected_users
+    if user_id in connected_users:
+        del connected_users[user_id]
 
 
 @socketio.on('signal')
@@ -1493,6 +1604,19 @@ def handle_signal(data):
     #trimitere semnal doar catre target
     if target_sid:
         emit('signal', {'from':from_user, 'signal':signal_data}, room=target_sid)
+
+
+
+#pentru refresh instant in pagina la toti utilizatorii cand cineva incarca un fisier
+@socketio.on("file-uploaded")
+def handle_file_uploaded(data):
+    session_code = data.get("sessionCode")
+    file_url = data.get("file_url")
+
+    if not session_code or not file_url:
+        return
+    
+    emit("new-file-uploaded",{"file_url":file_url}, room=session_code)
 
 
 # DataBase initialization (crearea automata a tabelului)
@@ -1512,4 +1636,4 @@ def add_cors_headers(response):
 # Pornim serverul
 if __name__ == "__main__":
     create_tables()
-    socketio.run(debug=False, host="127.0.0.1", port=5000)
+    socketio.run(app, debug=False, host="127.0.0.1", port=5000)
