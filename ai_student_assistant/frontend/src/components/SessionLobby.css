@@ -1,0 +1,39 @@
+.session-lobby{
+    text-align: center;
+    padding: 4rem;
+    color: white;
+}
+
+.session-actions{
+    margin-top: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.session-actions button{
+    padding: 0.8rem 2rem;
+    font-size: 1.1rem;
+    border: none;
+    border-radius: 8px;
+    background: #6c5ce7;
+    color: white;
+    cursor: pointer;
+}
+
+.session-actions button:hover{
+    background: #4834d4;
+}
+
+.join-box{
+    display: flex;
+    gap:1rem;
+}
+
+.join-box input{
+    padding: 0.6rem 1rem;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 1rem;
+}
+
