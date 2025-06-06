@@ -11,6 +11,8 @@ import ResetPasswordPage from './pages/ResetPasswordPage';
 import PublicRoute from './components/PublicRoute';
 import FallnikAIPage from './pages/FallnikAIPage';
 import MusicPage from './pages/MusicPage';
+import AccountTab from './components/AccountTab';
+import SettingsTab from './components/SettingsTab';
 
 function App() {
   return (
@@ -44,6 +46,8 @@ function App() {
           <Route path="" element={<DashboardPage />} />
           <Route path="ai" element={<FallnikAIPage />} />
           <Route path="music" element={<MusicPage />} />
+          <Route path="profile" element={<AccountTab />} />
+          <Route path="settings" element={<SettingsTab />} />
       </Route>
 
       </Routes>

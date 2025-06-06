@@ -27,7 +27,7 @@ load_dotenv()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # Flask app initializaton
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='/static', static_folder='static')
 CORS(app, supports_credentials=True, origins=["https://www.fallnik.com"])               #Accepta cereri de pe alte domenii (adica frontend)
 
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024 #50MB
@@ -60,6 +60,7 @@ class User(db.Model):
     confirmation_token = db.Column(db.String(64), unique = True)
     reset_token = db.Column(db.String(64), unique = True)
     reset_token_expiry = db.Column(db.DateTime)
+    avatar_url = db.Column(db.String, nullable = True)
 
 
 
@@ -1239,6 +1240,73 @@ def get_spotify_token():
     
     return jsonify({'token' : access_token})
 
+
+
+
+#upload-avatar de profil
+@app.route('/api/upload-avatar', methods=['POST'])
+@login_required
+def upload_avatar():
+    if 'avatar' not in request.files:
+        return jsonify({"error" : "No file part"}), 400
+    
+    file = request.files['avatar']
+    if file.filename == '':
+        return jsonify({"error" : "No selected files"}), 400
+    
+    #salvare fisier
+    username = request.cookies.get("session_id")
+    user = User.query.filter_by(username=username).first()
+
+    filename = secure_filename(f"{username}_avatar.png")
+    full_path = os.path.join("/var/www/fallnik.com/html/static/avatars", filename)
+    relative_url=f"/static/avatars/{filename}"
+
+    try:
+        file.save(full_path)
+        user.avatar_url = relative_url
+        db.session.commit()
+        return jsonify({"avatar_url": relative_url}), 200
+    except Exception as e:
+        return jsonify({"error":str(e)}), 500
+
+
+
+
+#user info
+@app.route('/api/user-info', methods=['GET'])
+@login_required
+def user_info():
+    username = request.cookies.get("session_id")
+    user = User.query.filter_by(username=username).first()
+
+    if not user:
+        return jsonify({"error" : "User not found"}), 404
+    
+    return jsonify({
+        "username" : user.username,
+        "email" : user.email,
+        "avatar_url" : user.avatar_url or "/static/avatars/default-avatar.png"
+    })
+
+
+
+@app.route('/api/delete-account', methods=['DELETE'])
+@login_required
+def delete_account():
+    username = request.cookies.get("session_id")
+    user = User.query.filter_by(username=username).first()
+    
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    # Poți adăuga aici ștergerea fișierului avatar dacă vrei
+    db.session.delete(user)
+    db.session.commit()
+
+    response = jsonify({"message": "Account deleted"})
+    response.set_cookie("session_id", "", expires=0)
+    return response
 
 
 # DataBase initialization (crearea automata a tabelului)

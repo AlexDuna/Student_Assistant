@@ -85,7 +85,7 @@ export const MusicPlayerProvider = ({ children }) => {
         if (!playlistTracks.length || currentTrackIndex === null) return;
       
         if (isRepeat) {
-          // Redă din nou aceeași piesă
+          // reda din nou aceeasi piesa
           const uri = playlistTracks[currentTrackIndex].track.uri;
           await playTrack(uri, currentTrackIndex, playlistTracks);
           return;

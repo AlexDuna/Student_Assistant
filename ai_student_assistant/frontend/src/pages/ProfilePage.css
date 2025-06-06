@@ -1,0 +1,31 @@
+.profile-page{
+    padding: 2rem;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.tab-header{
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.tab-header button{
+    padding: 0.5rem 1rem;
+    border: none;
+    background: #eee;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.tab-header button.active{
+    background: #333;
+    color: #fff;
+}
+
+.tab-content{
+    border: 1px solid #ccc;
+    padding: 1rem;
+    border-radius: 0.5rem;
+}
