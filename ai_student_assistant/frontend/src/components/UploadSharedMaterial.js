@@ -1,7 +1,7 @@
 import React, {useState, useEffect, useRef} from "react";
 import { API_URL } from "../utils/config";
 
-const UploadSharedMaterial = ({sessionCode}) => {
+const UploadSharedMaterial = ({sessionCode, socket}) => {
     const [file, setFile] = useState(null);
     const [uploadedUrl, setUploadedUrl] = useState(null);
     const [uploading, setUploading] = useState(false);
@@ -39,6 +39,19 @@ const UploadSharedMaterial = ({sessionCode}) => {
         }
     }, [uploadedUrl]);
 
+    useEffect(() => {
+        if(!socket) return;
+
+        const handleNewFile = ({file_url}) => {
+            setUploadedUrl(file_url);
+        };
+
+        socket.on("new-file-uploaded", handleNewFile);
+        return() => {
+            socket.off("new-file-uploaded", handleNewFile);
+        };
+    }, [socket]);
+
     const handleUpload = async () => {
         if(!file) return;
 
@@ -56,11 +69,16 @@ const UploadSharedMaterial = ({sessionCode}) => {
             setUploadedUrl(data.file_url);
             setFile(null);
             if (fileInputRef.current) fileInputRef.current.value = "";
+
+            if(socket){
+                socket.emit("file-uploaded", {sessionCode, file_url:data.file_url});
+            }
         }catch(err){
             console.error("Upload failed", err);
         }finally{
             setUploading(false);
         }
+
     };
 
     return (

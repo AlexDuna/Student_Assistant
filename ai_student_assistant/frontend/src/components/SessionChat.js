@@ -5,8 +5,7 @@ import {Send} from "lucide-react";
 import { getCookie } from "../utils/cookies";
 
 
-const SessionChat = ({ sessionCode }) =>{
-    const [messages, setMessages] = useState([]);
+const SessionChat = ({ sessionCode, messages, fetchMessages }) =>{
     const [text, setText] = useState("");
     const [sending, setSending] = useState(false);
     const [currentUser, setCurrentUser] = useState(null);
@@ -19,25 +18,11 @@ const SessionChat = ({ sessionCode }) =>{
         }
     }, []);
 
-    const fetchMessages = async () =>{
-        try{
-            const res = await fetch(`${API_URL}/sessions/${sessionCode}/chat`,{
-                credentials: "include"
-            });
-            const data = await res.json();
-            console.log("💬 Mesaje primite:", JSON.stringify(data, null, 2));
-
-            setMessages(data.messages || []);
-        }catch(err){
-            console.error("Failed to fetch chat messages", err);
-        }
-    };
-
     const scrollToBottom = () => {
-        if(messagesEndRef.current){
-            messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-        }
-    };
+      if(messagesEndRef.current){
+          messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+      }
+  };
 
     const sendMessages = async () => {
         if(!text.trim()) return;
@@ -69,15 +54,9 @@ const SessionChat = ({ sessionCode }) =>{
     };
 
     useEffect(() => {
-        fetchMessages();
-        const interval = setInterval(fetchMessages, 3000);
-        return () => clearInterval(interval);
-    }, [sessionCode]);
-
-    useEffect(() => {
-        scrollToBottom();
-    }, [messages]);
-
+      scrollToBottom();
+  }, [messages]);
+  
     return (
         <div className="session-chat-container">
           <div className="session-chat-messages">

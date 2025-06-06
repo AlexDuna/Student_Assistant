@@ -1,5 +1,5 @@
 import React , { useEffect, useState } from "react";
-import { FaCalendarAlt, FaCog, FaMusic, FaRobot, FaSignOutAlt, FaTasks, FaUser } from "react-icons/fa";
+import { FaCalendarAlt, FaCog, FaDashcube, FaHome, FaMusic, FaRobot, FaSignOutAlt, FaTasks, FaUser } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import "./Navbar.css"
 
@@ -40,10 +40,10 @@ return (
 
         <div className="navbar-right">
             <div className="nav-links">
+            <Link to="/dashboard" className="nav-link"><FaHome /> Dashboard</Link>
             <Link to="/dashboard/sessions" className="nav-link"><FaTasks /> Sessions</Link>
             <Link to="/dashboard/ai" className="nav-link"><FaRobot /> Fallnik AI</Link>
             <Link to="/dashboard/music" className="nav-link"><FaMusic /> Music</Link>
-            <Link to="/dashboard/calendar" className="nav-link"><FaCalendarAlt /> Calendar</Link>
         </div>
 
             <img
