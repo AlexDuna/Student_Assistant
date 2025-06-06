@@ -1,29 +1,31 @@
-import React , { useState } from "react";
+import React , { useEffect, useState } from "react";
 import { FaCalendarAlt, FaCog, FaMusic, FaRobot, FaSignOutAlt, FaTasks, FaUser } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import "./Navbar.css"
-import SpotifyLoginButton from "./SpotifyLoginButton";
 
 const Navbar = ({username}) => {
     const [menuOpen, setMenuOpen] = useState(false);
+    const [avatarUrl, setAvatarUrl] = useState("/default-avatar.png")
     const navigate = useNavigate();
 
-    const handleLogout = async () => {
+useEffect(() => {
+    const fetchUserInfo = async () => {
         try{
-            await fetch("https://www.fallnik.com/api/spotify/pause", {
-                method: "PUT",
-                credentials: "include",
+            const res = await fetch("https://www.fallnik.com/api/user-info", {
+                credentials: "include"
             });
 
-            await fetch("https://www.fallnik.com/api/logout",{
-                method: "POST",
-                credentials: "include",
-            });
-            navigate("/login");
+            const data= await res.json();
+            if(res.ok){
+                setAvatarUrl(data.avatar_url || "/default-avatar.png");
+            }
         }catch(err){
-            console.error("Logout failed", err);
+            console.error("Failed to fetch user avatar ", err);
         }
     };
+
+    fetchUserInfo();
+}, [])
 
 
 return (
@@ -45,7 +47,7 @@ return (
         </div>
 
             <img
-                src="/default-avatar.png"
+                src={avatarUrl}
                 alt="avatar"
                 className="avatar"
                 onClick={() => setMenuOpen((prev) => !prev)}
@@ -55,7 +57,6 @@ return (
                 <div className="dropdown-menu">
                     <Link to="/dashboard/profile"><FaUser /> Account </Link>
                     <Link to="/dashboard/settings"><FaCog /> Settings </Link>
-                    <button onClick={handleLogout}> <FaSignOutAlt /> Logout</button>
                 </div>
             )}
         </div>

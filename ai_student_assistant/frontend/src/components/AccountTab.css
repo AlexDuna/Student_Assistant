@@ -1,0 +1,200 @@
+.gradient-background{
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -3;
+    background: linear-gradient(-45deg, #1a1c2c, #30274d, #a855f7 , #3d2c8d, #1a1b3f, #e946c7);
+    background-size: 400% 400%;
+    animation: gradientMove 12s ease infinite;
+  }
+  
+  @keyframes gradientMove{
+    0% {background-position: 0% 50%;}
+    50% {background-position: 100% 50%;}
+    100% {background-position: 0% 50%;}
+  }
+  
+  .grain-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: -1;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'><filter id='noiseFilter'><feTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23noiseFilter)'/></svg>");
+    opacity: 0.02;
+    animation: grainMove 2s infinite alternate;
+    background-repeat: repeat;
+  }
+  
+  @keyframes grainMove {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(-5%, -5%); }
+  }
+  
+  .blob-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    z-index: -2;
+    pointer-events: none;
+  }
+  
+  .blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.25;
+    animation: moveBlob 25s ease-in-out infinite alternate;
+    mix-blend-mode: screen;
+  }
+  
+  /* Culori și poziții inițiale */
+  .blob1 {
+    width: 400px;
+    height: 400px;
+    background: #a855f7;
+    top: 10%;
+    left: 20%;
+    animation-delay: 0s;
+  }
+  
+  .blob2 {
+    width: 350px;
+    height: 350px;
+    background: #e946c7;
+    top: 50%;
+    left: 60%;
+    animation-delay: 8s;
+  }
+  
+  .blob3 {
+    width: 300px;
+    height: 300px;
+    background: #5b21b6;
+    top: 30%;
+    left: 70%;
+    animation-delay: 16s;
+  }
+  
+  .blob4 {
+    width: 320px;
+    height: 320px;
+    background: #ff66cc; /* roz mai aprins */
+    top: 70%;
+    left: 15%;
+    animation-delay: 12s;
+  }
+  
+  .blob5 {
+    width: 450px;
+    height: 450px;
+    background: #9d4edd; /* mov intens */
+    top: 20%;
+    left: 80%;
+    animation-delay: 20s;
+  }
+  
+  
+  /* Mișcare ușoară */
+  @keyframes moveBlob {
+    0%   { transform: translate(0, 0) scale(1); }
+    50%  { transform: translate(-20px, 30px) scale(1.1); }
+    100% { transform: translate(30px, -20px) scale(0.95); }
+  }
+
+.account-tab{
+    padding: 2.5rem;
+    max-width: 500px;
+    width: 90%;
+    margin: 0 auto;
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.account-tab h2{
+    font-size: 1.8rem;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.5rem;
+}
+
+.info-section{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.info-section img{
+    width: 140px;
+    height: 140px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 3px solid #ffffff70;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+}
+
+.upload-section{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.upload-section input[type="file"] {
+    border: 1px solid #ccc;
+    padding: 0.5rem;
+    border-radius: 5px;
+}
+
+.upload-section button {
+    padding: 0.6rem 1.5rem;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    font-weight: bold;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.upload-section button:hover {
+    background-color: #2980b9;
+}
+
+.upload-section p {
+    color: #7bed9f;
+    font-weight: 500;
+    background: rgba(0,0,0,0.4);
+    padding: 0.4rem 0.8rem;
+    border-radius: 8px;
+}
+
+.account-tab-wrapper {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-top: 7rem; /* împinge mai jos */
+    position: relative;
+    z-index: 1;
+  }
+  
+

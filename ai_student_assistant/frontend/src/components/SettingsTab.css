@@ -1,0 +1,87 @@
+.settings-tab {
+    padding: 2.5rem;
+    max-width: 500px;
+    width: 90%;
+    margin: 0 auto;
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  .settings-tab h2 {
+    font-size: 1.8rem;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .settings-tab h3 {
+    color: white;
+    margin-bottom: 0.5rem;
+  }
+  
+  .settings-tab button {
+    padding: 0.7rem 1.5rem;
+    font-weight: bold;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .settings-tab button:first-of-type {
+    background-color: #1a0dab;
+    color: white;
+  }
+  
+  .settings-tab button:first-of-type:hover {
+    background-color: #0f0080;
+  }
+  
+  .settings-tab p {
+    margin: 0;
+    font-size: 0.95rem;
+  }
+  
+  .danger-zone {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .danger-zone h3 {
+    color: #e22d30;
+    margin-bottom: 0.5rem;
+  }
+  
+  .danger-zone button {
+    background-color: #520800;
+    color: white;
+  }
+
+  .logout-btn {
+    background-color: #19023d;
+    color: white;
+  }
+  
+  .danger-zone button:hover{
+    background-color: #a71e0f;
+  }
+
+  .logout-btn:hover {
+    background-color: #3d01c9;
+  }
+  
+  .logout-btn {
+    margin-top: 1rem;
+  }
+  
