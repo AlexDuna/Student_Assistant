@@ -1,0 +1,523 @@
+.gradient-background{
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -3;
+    background: linear-gradient(-45deg, #1a1c2c, #30274d, #a855f7 , #3d2c8d, #1a1b3f, #e946c7);
+    background-size: 400% 400%;
+    animation: gradientMove 12s ease infinite;
+  }
+  
+  @keyframes gradientMove{
+    0% {background-position: 0% 50%;}
+    50% {background-position: 100% 50%;}
+    100% {background-position: 0% 50%;}
+  }
+  
+  .grain-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: -1;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'><filter id='noiseFilter'><feTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23noiseFilter)'/></svg>");
+    opacity: 0.02;
+    animation: grainMove 2s infinite alternate;
+    background-repeat: repeat;
+  }
+  
+  @keyframes grainMove {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(-5%, -5%); }
+  }
+  
+  .blob-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    z-index: -2;
+    pointer-events: none;
+  }
+  
+  .blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.25;
+    animation: moveBlob 25s ease-in-out infinite alternate;
+    mix-blend-mode: screen;
+  }
+  
+  /* Culori și poziții inițiale */
+  .blob1 {
+    width: 400px;
+    height: 400px;
+    background: #a855f7;
+    top: 10%;
+    left: 20%;
+    animation-delay: 0s;
+  }
+  
+  .blob2 {
+    width: 350px;
+    height: 350px;
+    background: #e946c7;
+    top: 50%;
+    left: 60%;
+    animation-delay: 8s;
+  }
+  
+  .blob3 {
+    width: 300px;
+    height: 300px;
+    background: #5b21b6;
+    top: 30%;
+    left: 70%;
+    animation-delay: 16s;
+  }
+  
+  .blob4 {
+    width: 320px;
+    height: 320px;
+    background: #ff66cc; /* roz mai aprins */
+    top: 70%;
+    left: 15%;
+    animation-delay: 12s;
+  }
+  
+  .blob5 {
+    width: 450px;
+    height: 450px;
+    background: #9d4edd; /* mov intens */
+    top: 20%;
+    left: 80%;
+    animation-delay: 20s;
+  }
+  
+  
+  /* Mișcare ușoară */
+  @keyframes moveBlob {
+    0%   { transform: translate(0, 0) scale(1); }
+    50%  { transform: translate(-20px, 30px) scale(1.1); }
+    100% { transform: translate(30px, -20px) scale(0.95); }
+  }
+
+/*
+  .react-calendar {
+    width: 100%;
+    max-width: 1000px;
+    min-width: unset;
+    font-size: 0.85rem;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    padding: 0;
+    min-height: unset;
+    height: auto;
+  }
+
+  .react-calendar__navigation button {
+    color: #4a4a4a;
+    min-width: 44px;
+    background: none;
+    font-weight: bold;
+    font-size: 1.2em;
+    margin: 0 8px;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+  }
+  
+  .react-calendar__navigation button:hover {
+    background-color: #eaeaea;
+  }
+  
+  .react-calendar__month-view__weekdays {
+    text-transform: uppercase;
+    font-weight: 700;
+    font-size: 0.75em;
+    color: #666;
+    padding: 0 10px;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    margin-top: 0.5rem;
+
+  }
+  
+  .react-calendar__tile {
+    padding: 4px 1px;
+    height: auto;
+    min-height: 110px;
+    padding-bottom: 10px;
+    margin: 0;
+    display:flex;
+    overflow: visible;
+    border-radius: 6px;
+    flex-direction: column;
+    align-items: flex-start;
+    transition: background-color 0.3s ease;
+  }
+  
+  .react-calendar__tile:enabled:hover,
+  .react-calendar__tile:enabled:focus {
+    background-color: #f0f0f0;
+    cursor: pointer;
+  }
+  
+  .react-calendar__tile--now {
+    background: #d6eaff;
+    border-radius: 6px;
+    font-weight: bold;
+    color: #004a99;
+  }
+  
+  .react-calendar__tile--active {
+    background: #004a99;
+    color: white;
+    border-radius: 6px;
+  }
+  
+  .react-calendar__tile ul {
+    padding-left: 6px;
+    margin: 4px 0 0 0;
+    list-style: none;
+    font-size: 0.7em;
+    max-height: none;
+    overflow-y: visible;
+    width: 100%;
+  }
+  
+  .react-calendar__tile ul li {
+    background-color: #9c89fa;
+    color: white;
+    font-size: 0.65rem;
+    border-radius: 3px;
+    padding: 1px 4px;
+    margin-bottom: 2px;
+    white-space: normal;
+    overflow-wrap: break-word;
+    max-height: none;
+    cursor: help;
+  }
+  
+  .react-calendar__tile ul::-webkit-scrollbar {
+    width: 6px;
+  }
+  .react-calendar__tile ul::-webkit-scrollbar-thumb {
+    background-color: #007bff;
+    border-radius: 3px;
+  }
+
+  .react-calendar__tile .event-list {
+    margin: 2px 0 0 0;
+    padding-left: 4px;
+    list-style: none;
+    font-size: 0.7em;
+    max-height: 50px;
+    overflow-y: auto;
+    width: 100%;
+  }
+  
+  .react-calendar__tile .event-list li {
+    background-color: #7b61ff;
+    color: white;
+    border-radius: 3px;
+    padding: 1px 5px;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    cursor: help;
+  }
+
+  .react-calendar__month-view__days {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 1px;
+    padding: 0px;
+    box-sizing: border-box;
+  }
+
+.react-calendar__month-view__days .react-calendar__tile {
+    min-height: 50px;
+    padding: 4px 2px;
+    box-sizing: border-box;
+    font-size: 0.85rem;
+    border-radius: 6px;
+    flex-grow: 0;
+    margin: 0;
+  }
+  */
+  
+
+  .calendar-wrapper{
+    max-width:1300px;
+    max-height: 80vh;
+    margin: 2rem auto 4rem auto;
+    background-color: rgba(255,255,255,0.9);
+    padding: 1rem 1.5rem 1.5rem 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+    margin-top: 90px;
+    margin-bottom: 60px;
+    overflow-y: auto;
+  }
+
+  .calendar-wrapper input[type="date"],
+  .calendar-wrapper input[type="text"],
+  .calendar-wrapper textarea{
+    display: inline-block;
+    margin-right: 1rem;
+    margin-bottom: 1rem;
+    padding: 10px 14px;
+    border: 2px solid #7b61ff;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    vertical-align: middle;
+    width: 180px;
+    box-sizing: border-box;
+  }
+
+  .calendar-wrapper textarea {
+    width: 300px;
+    resize: vertical;
+    min-height: 50px;
+    max-height: 120px;
+}
+
+.calendar-wrapper input[type="date"]:focus,
+.calendar-wrapper input[type="text"]:focus,
+.calendar-wrapper textarea:focus {
+    border-color: #5922cc;
+    box-shadow: 0 0 6px #7b61ffaa;
+    outline: none;
+}
+
+.calendar-wrapper button {
+    background: #7b61ff;
+    border: none;
+    color: white;
+    font-weight: 700;
+    padding: 10px 24px;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    box-shadow: 0 3px 12px #7b61ff99;
+    transition: background-color 0.3s ease;
+}
+
+.calendar-wrapper button:hover {
+    background: #5922cc;
+    box-shadow: 0 6px 18px #5922cccc;
+}
+
+
+.calendar-wrapper h2,
+.calendar-wrapper h3 {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: #1a1b3f;
+}
+
+.calendar-content {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start; /* să alinieze în partea de sus */
+  }
+  
+  /* Calendarul să ocupe mai mult spațiu */
+  .calendar-left {
+    flex: 3;
+    max-width: 1100px;
+    min-width: 750px;
+    overflow-x: auto;
+  }
+  
+  /* Partea dreaptă mai îngustă */
+  .calendar-right {
+    flex: 1;
+    max-width: 300px;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Stilizare inputuri și buton pentru a ocupa toată lățimea containerului */
+  .calendar-right input,
+  .calendar-right textarea,
+  .calendar-right button {
+    width: 100%;
+    margin-bottom: 1rem;
+    box-sizing: border-box;
+  }
+
+
+  .react-calendar__month-view__weekdays {
+    display: grid !important;
+    grid-template-columns: repeat(7, 1fr) !important;
+  }
+  
+  .react-calendar__month-view__days {
+    display: grid !important;
+    grid-template-columns: repeat(7, 1fr) !important;
+    gap: 2px !important;
+  }
+  
+  .react-calendar__tile {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    min-height: 80px !important; /* sau cât dorești */
+  }
+  
+  .react-calendar {
+    width: 100%;
+    max-width: 1000px;
+    min-width: unset;
+    font-size: 0.85rem;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    padding: 0;
+    min-height: unset;
+    height: auto;
+  }
+  
+  .react-calendar__navigation button {
+    color: #4a4a4a;
+    min-width: 44px;
+    background: none;
+    font-weight: bold;
+    font-size: 1.2em;
+    margin: 0 8px;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+  }
+  
+  .react-calendar__navigation button:hover {
+    background-color: #eaeaea;
+  }
+  
+  .react-calendar__month-view__weekdays {
+    text-transform: uppercase;
+    font-weight: 700;
+    font-size: 0.75em;
+    color: #666;
+    padding: 0 10px;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: repeat(7, 1fr); /* fix 7 coloane */
+    gap: 4px;
+    margin-top: 0.5rem;
+  }
+  
+  .react-calendar__month-view__days {
+    display: grid !important;
+    grid-template-columns: repeat(7, 1fr) !important; /* fix 7 coloane */
+    gap: 1px !important;
+    padding: 0 !important;
+    box-sizing: border-box;
+  }
+  
+  .react-calendar__tile {
+    padding: 4px 1px;
+    height: auto;
+    min-height: 110px;
+    padding-bottom: 10px;
+    margin: 0;
+    display: flex;
+    overflow: visible;
+    border-radius: 6px;
+    flex-direction: column;
+    align-items: flex-start;
+    transition: background-color 0.3s ease;
+    width: 100% !important; /* forțează să ocupe tot spațiul în grid */
+    box-sizing: border-box !important;
+  }
+  
+  .react-calendar__tile:enabled:hover,
+  .react-calendar__tile:enabled:focus {
+    background-color: #f0f0f0;
+    cursor: pointer;
+  }
+  
+  .react-calendar__tile--now {
+    background: #d6eaff;
+    border-radius: 6px;
+    font-weight: bold;
+    color: #004a99;
+  }
+  
+  .react-calendar__tile--active {
+    background: #004a99;
+    color: white;
+    border-radius: 6px;
+  }
+  
+  .react-calendar__tile ul {
+    padding-left: 6px;
+    margin: 4px 0 0 0;
+    list-style: none;
+    font-size: 0.7em;
+    max-height: none;
+    overflow-y: visible;
+    width: 100%;
+  }
+  
+  .react-calendar__tile ul li {
+    background-color: #9c89fa;
+    color: white;
+    font-size: 0.65rem;
+    border-radius: 3px;
+    padding: 1px 4px;
+    margin-bottom: 2px;
+    white-space: normal;
+    overflow-wrap: break-word;
+    max-height: none;
+    cursor: help;
+  }
+  
+  .react-calendar__tile ul::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .react-calendar__tile ul::-webkit-scrollbar-thumb {
+    background-color: #007bff;
+    border-radius: 3px;
+  }
+  
+  .react-calendar__tile .event-list {
+    margin: 2px 0 0 0;
+    padding-left: 4px;
+    list-style: none;
+    font-size: 0.7em;
+    max-height: 50px;
+    overflow-y: auto;
+    width: 100%;
+  }
+  
+  .react-calendar__tile .event-list li {
+    background-color: #7b61ff;
+    color: white;
+    border-radius: 3px;
+    padding: 1px 5px;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    cursor: help;
+  }
+  

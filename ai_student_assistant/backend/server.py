@@ -98,6 +98,16 @@ class Session(db.Model):
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 
+
+class CalendarEvent(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    title = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text)
+    date = db.Column(db.Date, nullable=False)
+
+    user = db.relationship("User", backref="calendar_events")
+
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -1617,6 +1627,73 @@ def handle_file_uploaded(data):
         return
     
     emit("new-file-uploaded",{"file_url":file_url}, room=session_code)
+
+
+
+#partea de calendar
+@app.route('/api/calendar/events', methods=['GET'])
+@login_required
+def get_events():
+    user_id = session.get('user_id')
+    events = CalendarEvent.query.filter_by(user_id = user_id).order_by(CalendarEvent.date).all()
+    result = [{
+        'id':e.id,
+        'title':e.title,
+        'description':e.description,
+        'date':e.date.isoformat()
+    }for e in events]
+    return jsonify(result)
+
+
+@app.route('/api/calendar/events', methods=['POST'])
+@login_required
+def add_event():
+    user_id = session.get('user_id')
+    data = request.get_json()
+    title = data.get('title')
+    description = data.get('description', '')
+    date_str = data.get('date')
+
+    if not title or not date_str:
+        return jsonify({'error':'Missing title or date'}), 400
+    
+    try:
+        event_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+    except ValueError:
+        return jsonify({'error':'Invalid date format, expected YYYY-MM-DD'}), 400
+    
+    new_event = CalendarEvent(user_id=user_id, title=title, description=description, date=event_date)
+    db.session.add(new_event)
+    db.session.commit()
+
+    return jsonify({'message':'Event added successfully','event_id':new_event.id}), 201
+
+
+#trimitere mail ca reminder pentru examene
+def send_reminders():
+    reminder_date = datetime.now(timezone.utc).date() + timedelta(days=3)
+    events = CalendarEvent.query.filter(CalendarEvent.date == reminder_date).all()
+
+    for event in events:
+        user = User.query.get(event.user_id)
+        if user and user.is_confirmed:
+            try:
+                msg = Message(
+                    subject=f"Reminder: Upcoming event on {event.date}",
+                    recipients=[user.email]
+                )
+                msg.body=(
+                    f"Hello {user.username}, \n\n"
+                    f"This is a reminder for your upcoming event: \n"
+                    f"Title: {event.title}\n"
+                    f"Date: {event.date}\n"
+                    f"Details: {event.description or 'No aditional details'}\n\n"
+                    "Good luck with your preparation!"
+                )
+                mail.send(msg)
+                print(f"Sent reminder to {user.email} for event {event.title}")
+            except Exception as e:
+                print(f"Failed to send reminder email: {e}")
 
 
 # DataBase initialization (crearea automata a tabelului)
