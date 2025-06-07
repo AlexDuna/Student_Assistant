@@ -44,6 +44,7 @@ return (
             <Link to="/dashboard/sessions" className="nav-link"><FaTasks /> Sessions</Link>
             <Link to="/dashboard/ai" className="nav-link"><FaRobot /> Fallnik AI</Link>
             <Link to="/dashboard/music" className="nav-link"><FaMusic /> Music</Link>
+            <Link to="/dashboard/calendar" className="nav-link"><FaCalendarAlt /> Calendar</Link>
         </div>
 
             <img

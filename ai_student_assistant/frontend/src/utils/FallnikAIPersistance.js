@@ -16,7 +16,7 @@ export async function loadPersistentStateFromServer() {
 
 export async function savePersistentStateToServer(state){
     try{
-        await fetch("https://www.fallnik.com/api/user-data",{
+        const res = await fetch("https://www.fallnik.com/api/user-data",{
             method:"POST",
             credentials:"include",
             headers:{
@@ -24,6 +24,10 @@ export async function savePersistentStateToServer(state){
             },
             body: JSON.stringify(state)
         });
+        if(!res.ok){
+            const errorData = await res.json();
+            console.error("Save user data failed:", errorData);
+        }
     }catch(e){
         console.error("Failed to save user data from server", e);
     }
