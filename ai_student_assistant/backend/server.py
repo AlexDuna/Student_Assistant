@@ -26,6 +26,8 @@ from sqlalchemy import func
 #Incarcare variabile din .env
 load_dotenv()
 
+
+
 #Setare cheie OpenAI
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
@@ -50,8 +52,6 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initializam obiectul SQLAlchemy
 db = SQLAlchemy(app)
-
-
 
 # Model User (tabelul din baza de date)
 class User(db.Model):

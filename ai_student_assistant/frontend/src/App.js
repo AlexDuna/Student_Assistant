@@ -15,6 +15,8 @@ import AccountTab from './components/AccountTab';
 import SettingsTab from './components/SettingsTab';
 import SessionsPage from './pages/SessionPage';
 import CalendarPage from './pages/CalendarPage';
+import PrivacyPolicy from './components/PrivayPolicy';
+import TermsOfService from './components/TermsOfService';
 
 function App() {
   return (
@@ -53,6 +55,8 @@ function App() {
           <Route path="sessions" element={<SessionsPage />} />
           <Route path="calendar" element={<CalendarPage />} />
       </Route>
+      <Route path="/privacy" element={<PrivacyPolicy/>} />
+      <Route path="/terms" element={<TermsOfService/>} />
 
       </Routes>
     </div>
