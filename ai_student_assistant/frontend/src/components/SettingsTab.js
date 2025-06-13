@@ -103,6 +103,11 @@ const SettingsTab =() =>{
             </button>
             </div>
 
+            <div style={{marginTop:"2rem", textAlign: "center"}}>
+                <Link to="/privacy" style={{color: "#aaa", marginRight: 12}}>Privacy Policy</Link>
+                <Link to="/terms" style={{color: "#aaa", marginRight: 12}}>Terms of Service</Link>
+            </div>
+
             <button onClick={handleLogout} className="logout-btn">
                 <FaSignOutAlt />Logout
             </button>

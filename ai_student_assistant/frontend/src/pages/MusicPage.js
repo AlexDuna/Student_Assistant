@@ -231,7 +231,7 @@ const MusicPage = () => {
             .then(data => {
                 if(data.tracks && data.tracks.items){
                     setSearchResults(data.tracks.items);
-                    setPlaylistTracks(data.tracks.items.map(track => ({ track })));
+                    setPlaylistTracks(data.tracks.items.map(track => ({ track }) || PLACEHOLDER));
 
                     setSelectedPlaylist("__search__");
                     setIsSearchMode(true);
