@@ -5,6 +5,8 @@ import Navbar from "../components/Navbar";
 import SpotifyLoginButton from "../components/SpotifyLoginButton";
 import { MusicPlayerContext } from "../utils/MusicPlayerContext";
 
+const PLACEHOLDER = "https://via.placeholder.com/100";
+
 const MusicPage = () => {
     const [currentTrack, setCurrentTrack] = useState(null);
     const [profile, setProfile] = useState(null);
@@ -29,6 +31,7 @@ const MusicPage = () => {
 
 
     const handleSpotifyLogout = async () => {
+        setError(null);
         await fetch("https://www.fallnik.com/api/spotify/logout",{
             method:"POST",
             credentials: "include"
@@ -51,6 +54,7 @@ const MusicPage = () => {
             return;
         }
 
+        try{
         const res = await fetch(`https://www.fallnik.com/api/spotify/playlist/${playlistId}/tracks`,{
             credentials: "include"
         });
@@ -61,6 +65,9 @@ const MusicPage = () => {
                 trackSectionRef.current?.scrollIntoView({behavior: "smooth"});
             }, 100);
         }
+    }catch(err){
+        setError("Couldn't load playlist.");
+    }
     }
 
     const handleTrackPlay = (uri, index) => {
@@ -79,27 +86,33 @@ const MusicPage = () => {
     }
 
     useEffect(() => {
-            fetch("https://www.fallnik.com/api/spotify/profile",{
+        let currentlyInterval = null;
+        let recentInterval = null;
+
+        async function loadProfile() {
+            try{
+                const res = await fetch("https://www.fallnik.com/api/spotify/profile",{
                 method: "GET",
                 credentials: "include"
-            })
-            .then(res => res.json())
-            .then(data=>{
-                if (!data.error) setProfile(data);
-            });
+                });
+                const data = await res.json();
+                if(!data.error) setProfile(data);
+            }catch(err){ /*ignore*/}
+        }
+        loadProfile();
 
-            fetch("https://www.fallnik.com/api/spotify/player-status",{
-                method: "GET",
-                credentials: "include"
-            })
-            .then(res => res.json())
-            .then(data => {
-                if(typeof data.is_playing !== "undefined"){
-                    setIsPaused(!data.is_playing);
-                }
-            });
+        fetch("https://www.fallnik.com/api/spotify/player-status",{
+            method: "GET",
+            credentials: "include"
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(typeof data.is_playing !== "undefined"){
+                setIsPaused(!data.is_playing);
+            }
+        });
 
-            const currentlyInterval = setInterval(() => {
+        currentlyInterval = setInterval(() => {
             fetch("https://www.fallnik.com/api/spotify/currently-playing",{
                 method: "GET",
                 credentials: "include"
@@ -110,7 +123,7 @@ const MusicPage = () => {
                     setCurrentTrack({
                         name: data.item.name,
                         artist: data.item.artists.map(a => a.name).join(", "),
-                        albumImage: data.item.album.images[0].url,
+                        albumImage: data.item.album.images[0].url || PLACEHOLDER,
                         link: data.item.external_urls.spotify
                     });
                 }else if (data.message){
@@ -120,7 +133,7 @@ const MusicPage = () => {
         }, 3000);
         
 
-        const recentInterval = setInterval(() => {
+        recentInterval = setInterval(() => {
             fetch("https://www.fallnik.com/api/spotify/recent-tracks",{
                 method: "GET",
                 credentials: "include"
@@ -147,7 +160,7 @@ const MusicPage = () => {
                             name: "🕘Recently Played",
                             tracks: {total: uniqueTracks.length },
                             images: [{
-                                url: uniqueTracks[0]?.track.album.images[0]?.url || "https://via.placeholder.com/300"
+                                url: uniqueTracks[0]?.track.album.images[0]?.url || PLACEHOLDER
                             }],
                             isRecentlyPlayed: true,
                             items: uniqueTracks
@@ -159,7 +172,7 @@ const MusicPage = () => {
         }, 10000);
 
 
-            fetch("https://www.fallnik.com/api/spotify/playlists",{
+        fetch("https://www.fallnik.com/api/spotify/playlists",{
                 method: "GET",
                 credentials: "include"
             })
@@ -168,7 +181,7 @@ const MusicPage = () => {
                 if(data.items) setPlaylists(data.items);
             });
 
-            fetch("https://www.fallnik.com/api/spotify/liked-tracks",{
+        fetch("https://www.fallnik.com/api/spotify/liked-tracks",{
                 method: "GET",
                 credentials: "include"
             })
@@ -182,7 +195,7 @@ const MusicPage = () => {
                             name: "❤️ Liked Songs",
                             tracks: {total: data.items.length} ,
                             images: [{
-                                url: data.items[0]?.track.album.images[0]?.url || "https://via.placeholder.com/300"
+                                url: data.items[0]?.track.album.images[0]?.url || PLACEHOLDER
                             }],
                             isLikedSongs: true,
                             items: data.items
@@ -191,9 +204,9 @@ const MusicPage = () => {
                 }
             });
 
-            return () => {
-                clearInterval(recentInterval);
-                clearInterval(currentlyInterval);
+        return () => {
+                currentlyInterval && clearInterval(currentlyInterval);
+                recentInterval && clearInterval(recentInterval);
             }
     }, []);
 
@@ -232,6 +245,12 @@ const MusicPage = () => {
     return (
         <>
         <Navbar />
+        {error && (
+            <div className="error-message" style={{color: "red"}}>
+                {error}
+            </div>
+        )}
+
         {!profile?.display_name ? (
             <div className="spotify-login-section">
                 <h3>Connect to a spotify account</h3>
@@ -245,7 +264,7 @@ const MusicPage = () => {
                 </div>
                 {profile && (
                     <div className="profile-area">
-                        <img src={profile.images[0]?.url || "https://via.placeholder.com/42"} alt="Avatar" className="profile-avatar"/>
+                        <img src={profile.images[0]?.url || PLACEHOLDER} alt="Avatar" className="profile-avatar"/>
                     </div>
                 )}
             </div>
@@ -256,7 +275,7 @@ const MusicPage = () => {
                 {currentTrack && (
                     <div className="dashboard-card">
                         <p style={{color: "#62f83c"}}>Currently Playing</p>
-                        <img src={currentTrack.albumImage} alt="Album" style={{width: "100px", borderRadius: "10px"}} />
+                        <img src={currentTrack.albumImage || PLACEHOLDER} alt="Album" style={{width: "100px", borderRadius: "10px"}} />
                         <h3>{currentTrack.name}</h3>
                         <p>by {currentTrack.artist}</p>
                         <a href={currentTrack.link} target="_blank" rel="noopener noreferrer">Open in Spotify</a>
@@ -294,7 +313,7 @@ const MusicPage = () => {
                         <div className="dashboard-grid">
                             {playlists.length > 0 ? (
                                 playlists.map((playlist) => (
-                                    <a
+                                    <div
                                         key={playlist.id || playlist.name}
                                         className="dashboard-card"
                                         onClick={() =>
@@ -307,7 +326,7 @@ const MusicPage = () => {
                                         style={{ cursor: "pointer" }}
                                     >
                                         <img
-                                            src={playlist.images[0]?.url}
+                                            src={playlist.images[0]?.url || PLACEHOLDER}
                                             alt={playlist.name}
                                             style={{
                                                 width: "100%",
@@ -316,8 +335,8 @@ const MusicPage = () => {
                                             }}
                                         />
                                         <h3>{playlist.name}</h3>
-                                        <p>{playlist.tracks.total} tracks</p>
-                                    </a>
+                                        <p>{playlist.tracks.total || 0} tracks</p>
+                                    </div>
                                 ))
                             ) : (
                                 <p style={{ color: "#ccc" }}>No playlists found.</p>
@@ -342,11 +361,12 @@ const MusicPage = () => {
                         <div className="dashboard-grid">
                             {playlistTracks.map((trackObj, index) => {
                                 const track = trackObj.track;
+                                if (!track) return null;
                                 return(
                                     <div key={track.id || index } className="dashboard-card">
-                                        <img src={track.album.images[0]?.url} alt={track.name} style={{width: "100%", borderRadius: "12px", marginBottom:"10px"}} />
+                                        <img src={track.album.images[0]?.url || PLACEHOLDER} alt={track.name} style={{width: "100%", borderRadius: "12px", marginBottom:"10px"}} />
                                         <h4>{track.name}</h4>
-                                        <p>{track.artists.map(a => a.name).join(", ")}</p>
+                                        <p>{track.artists.map(a => a.name).join(", ") || "Unknown Artist"}</p>
                                         <button 
                                             style={{
                                                 marginTop: "10px",
@@ -378,9 +398,9 @@ const MusicPage = () => {
                             const track = trackObj.track;
                             return(
                                 <div key={track.id || index } className="dashboard-card">
-                                    <img src={track.album.images[0]?.url} alt={track.name} style={{width: "100%", borderRadius: "12px", marginBottom:"10px"}} />
+                                    <img src={track.album.images[0]?.url || PLACEHOLDER} alt={track.name} style={{width: "100%", borderRadius: "12px", marginBottom:"10px"}} />
                                     <h4>{track.name}</h4>
-                                    <p>{track.artists.map(a => a.name).join(", ")}</p>
+                                    <p>{track.artists.map(a => a.name).join(", ") || "Unknown Artist"}</p>
                                     <button 
                                         style={{
                                             marginTop: "10px",

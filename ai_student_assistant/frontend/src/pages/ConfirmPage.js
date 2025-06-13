@@ -9,6 +9,10 @@ const ConfirmPage = () => {
     const [message, setMessage] = useState("Confirming...");
     const [error, setError] = useState(false);
 
+    function isMobile() {
+        return /Mobi|Android|iPhone|iPad|iPod|Opera Mini|IEMobile|BlackBerry/i.test(navigator.userAgent);
+    }
+
     useEffect(() => {
         const confirmAccount = async () => {
             try {
@@ -16,8 +20,10 @@ const ConfirmPage = () => {
                 const data = await res.json();
 
                 if(res.ok){
-                    setMessage("Account confirmed successfully. Redirecting to login...");
+                    setMessage("Account confirmed successfully. You can now log in.");
+                    if(!isMobile()){
                     setTimeout(() => navigate("/login"), 3000);
+                    }
                 }else{
                     setMessage(data.error || "Invalid or expired token.");
                     setError(true);
