@@ -24,6 +24,7 @@ const RegisterPage = () => {
     const [emailAvailable, setEmailAvailable] = useState(null);
     const [registered, setRegistered] = useState(false);
     const [checkingSession, setCheckingSession] = useState(true);
+    const [pendingEmail, setPendingEmail] = useState("");
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -47,8 +48,6 @@ const RegisterPage = () => {
 
         checkSession();
     }, [navigate]);
-
-    if(checkingSession) return <p>Loading...</p>;
 
     //Functie pentru verificare username in timp real in frontend
     const checkUsername = async (username) => {
@@ -147,6 +146,7 @@ const RegisterPage = () => {
             if(response.ok){
                 alert(data.message); //"User registered successfully"
                 setRegistered(true);
+                setPendingEmail(form.email);
             }else if(response.status===409){
                 setSubmissionError("Username or email already exists.");
             }else{
@@ -157,6 +157,24 @@ const RegisterPage = () => {
             alert("Server error");
         }
     };
+
+    useEffect(() => {
+        if(registered && pendingEmail){
+            const interval = setInterval(async () => {
+                try{
+                    const res = await fetch(`${API_URL}/is-confirmed?email=${encodeURIComponent(pendingEmail)}`);
+                    const data = await res.json();
+                    if(data.confirmed){
+                        clearInterval(interval);
+                        navigate('/login');
+                    }
+                }catch(e){/* ignora erori */}
+            }, 4000)
+            return () => clearInterval(interval);
+        }
+    }, [registered, pendingEmail, navigate])
+
+    if(checkingSession) return <p>Loading...</p>;
 
     
 
@@ -171,6 +189,7 @@ const RegisterPage = () => {
                     <div className="login-form">
                         <h2>Almost there!</h2>
                         <p>Please check your email and click the confirmation link to activate your account.</p>
+                        <p>After confirmation you will be automatically redirected.</p>
                     </div>
                 ) : (
 
@@ -255,7 +274,7 @@ const RegisterPage = () => {
                     </p>
                     )}
 
-                    <button type = "submit" onSubmit={handleSubmit}> Register </button>
+                    <button type = "submit"> Register </button>
                     {submissionError && (
                         <p style={{ color: "red", fontSize: "0.85rem" }}>
                             {submissionError}

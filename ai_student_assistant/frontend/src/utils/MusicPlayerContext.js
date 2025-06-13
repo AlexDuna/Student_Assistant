@@ -30,11 +30,15 @@ export const MusicPlayerProvider = ({ children }) => {
                 return;
               }
 
-            const waitForSpotify = () =>
-                new Promise((resolve) => {
-                    if(window.Spotify) return resolve();
-                    window.onSpotifyWebPlaybackSDKReady = resolve;
+            function waitForSpotify () {
+                return new Promise((resolve) => {
+                    if(window.Spotify){
+                        resolve();
+                    }else{
+                        window.onSpotifyWebPlaybackSDKReady = resolve;
+                    }
                 });
+            }
 
             await waitForSpotify();
 
