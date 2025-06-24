@@ -14,4 +14,4 @@
 - Personal Calendar with events
 - Music dashboard with full Spotify integration (playback, playlists, global controls, music search bar)
 - Enhanced security: email authentication, password reset tokens, salted and hashed passwords, secure token management
-- Real-time notifications and a modern, interactive UI
+- Real-time email notifications and a modern, interactive UI
